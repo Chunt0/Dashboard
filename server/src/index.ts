@@ -1,13 +1,21 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const PORT = 3003;
+//const PORT = parseInt(process.env.PORT || 3000, 10);
+const HOST = process.env.HOST || "localhost";
+const PORT = 3003
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+	origin: "https://label.putty-ai.com",
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+}));
 
-app.get('/health', (req, res) => {
+app.get('/health', cors({ origin: 'https://label.putty-ai.com' }), (req, res) => {
 	res.json({ status: 'ok', message: 'Server is healthy' });
 });
 
@@ -16,6 +24,6 @@ app.get('/', (req, res) => {
 })
 	;
 
-app.listen(PORT, "0.0.0.0", () => {
-	console.log(`Server listening on http://0.0.0.0:${PORT}`);
+app.listen(PORT, HOST, () => {
+	console.log(`Server listening on http://${HOST}:${PORT}`);
 });
