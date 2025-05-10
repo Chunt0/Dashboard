@@ -1,0 +1,71 @@
+# Top-level node_modules
+node_modules/
+# Top-level build/dist
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Vite/React client output & deps
+client/node_modules/
+client/dist/
+client/build/
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
+
+# Server output & deps
+server/node_modules/
+server/dist/
+server/build/
+server/.env.local
+server/.env.development.local
+server/.env.test.local
+server/.env.production.local
+server/uploads/
+server/logs/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE and editor files
+.vscode/
+*.swp
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Coverage directory used by tools like jest
+coverage/
+client/coverage/
+server/coverage/
+
+# Env files (keep only in dev, not in prod repo!)
+.env
+.env.*
+
+
+# Mac-specific
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows-specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Optional: Yarn/Pnpm
+.yarn/
+.pnp.*
+.pnpm-debug.log

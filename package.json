@@ -1,0 +1,12 @@
+{
+	"name": "labeling",
+	"private": true,
+	"scripts": {
+		"dev:client": "npm run dev --prefix client",
+		"dev:server": "npm run dev --prefix server",
+		"dev": "concurrently \"npm run dev:client\" \"npm run dev:server\""
+	},
+	"devDependencies": {
+		"concurrently": "^7.6.0"
+	}
+}
