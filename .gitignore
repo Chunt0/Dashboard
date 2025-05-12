@@ -67,6 +67,8 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
+*/uploads/
+
 # Optional: Yarn/Pnpm
 .yarn/
 .pnp.*
