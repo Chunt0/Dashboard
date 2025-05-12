@@ -21,8 +21,8 @@ function Video() {
 		if (files.length > 0) {
 			for (const file of files) {
 				const formData = new FormData();
-				formData.append('file', file);
-				await fetch('http://100.87.171.32:3003/upload', {
+				formData.append('files', file);
+				await fetch('http://localhost:3003/api/upload', {
 					method: 'POST',
 					body: formData,
 				});
