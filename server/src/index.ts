@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from "dotenv";
 import multer from 'multer';
@@ -13,11 +13,15 @@ if (!fs.existsSync(uploadDir)) {
 	fs.mkdirSync(uploadDir);
 }
 
+interface MulterRequest extends Request {
+	files?: Express.Multer.File[];
+}
+
 const storage = multer.diskStorage({
-	destination: (req, file, cb) => {
+	destination: (req: Request, file: Express.Multer.File, cb: FileCallback) => {
 		cb(null, uploadDir);
 	},
-	filename: (req, file, cb) => {
+	filename: (req: Request, file: Express.Multer.File, cb: FileCallback) => {
 		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
 		const ext = path.extname(file.originalname);
 		cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
@@ -34,15 +38,15 @@ const PORT = 3003
 app.use(express.json());
 app.use(cors());
 
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
 	res.send('Server is running');
 });
 
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
 	res.json({ status: 'ok', message: 'Server is healthy' });
 });
 
-app.post('/upload', upload.array('file'), (req, res) => {
+app.post('/upload', upload.array('file'), (req: MulterRequest, res: Response) => {
 	if (!req.files || !(req.files instanceof Array)) {
 		return res.status(400).json({ message: 'No files uploaded' });
 	}
