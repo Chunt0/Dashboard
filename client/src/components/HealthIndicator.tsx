@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const HEALTH_ENDPOINT = import.meta.env.VITE_API_BASE_URL;
+const HEALTH_ENDPOINT = import.meta.env.VITE_HEALTH_ENDPOINT;
 
 function HealthIndicator() {
   const [healthy, setHealthy] = useState<boolean | null>(null);
