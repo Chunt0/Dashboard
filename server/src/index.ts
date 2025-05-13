@@ -3,11 +3,12 @@ import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import https from 'https';
 
 const app = express();
 
 // Environment variables setup (optional)
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 30003;
 
 // Setup upload directory
 const uploadDir = path.resolve(__dirname, 'uploads');
@@ -44,7 +45,7 @@ app.get('/health', (req: Request, res: Response): void => {
 
 app.post(
 	'/api/upload',
-	upload.array('files', 100000),
+	upload.array('files', 10),
 	(req: Request, res: Response): void => {
 		const files = req.files as Express.Multer.File[] | undefined;
 		if (!files || files.length === 0) {
@@ -64,7 +65,12 @@ app.post(
 	}
 );
 
+const sslOptions = {
+	key: fs.readFileSync("/home/alan/Code/Labeling/server/server.key"),
+	cert: fs.readFileSync("/home/alan/Code/Labeling/server/server.cert"),
+};
+
 // Start server
-app.listen(PORT, () => {
-	console.log(`Server listening on http://localhost:${PORT}`);
+https.createServer(sslOptions, app).listen(PORT, () => {
+	console.log(`Server listening on https://0.0.0.0:${PORT}`);
 });

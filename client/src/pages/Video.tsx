@@ -1,8 +1,11 @@
 import React, { useState, DragEvent } from 'react';
 
+const UPLOAD_ENDPOINT = import.meta.env.VITE_UPLOAD_ENDPOINT;
+
 function Video() {
 	const [files, setFiles] = useState<File[]>([]);
 	const [urlList, setUrlList] = useState<string>('');
+	const [isLocked, setIsLocked] = useState<boolean>(false); // State to lock the drop zone
 
 	// Handle file input change (file picker)
 	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,14 +22,16 @@ function Video() {
 	// Process the uploaded files
 	const handleUpload = async () => {
 		if (files.length > 0) {
+			setIsLocked(true); // Lock the drop zone when uploading
 			for (const file of files) {
 				const formData = new FormData();
 				formData.append('files', file);
-				await fetch('http://localhost:3003/api/upload', {
+				await fetch(UPLOAD_ENDPOINT, {
 					method: 'POST',
 					body: formData,
 				});
 			}
+			setIsLocked(false); // Unlock the drop zone after uploading
 		}
 		// Handle URLs if needed
 		const urls = urlList.split('\n').filter(Boolean);
@@ -45,6 +50,8 @@ function Video() {
 	const handleDrop = (e: DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
 		e.stopPropagation();
+
+		if (isLocked) return; // Prevent dropping if locked
 
 		const items = e.dataTransfer.items;
 
@@ -94,6 +101,7 @@ function Video() {
 			// Optionally, filter only videos
 			const videoFiles = allFiles.filter(f => f.type.startsWith('video/'));
 			setFiles(videoFiles);
+			setIsLocked(true); // Lock the drop zone after files are added
 		});
 	};
 
@@ -107,26 +115,18 @@ function Video() {
 
 			{/* Drag & Drop Zone */}
 			<div
-				className="w-full max-w-md p-6 mb-6 border-4 border-white border-dashed rounded-lg bg-white/20 text-white text-center cursor-pointer hover:bg-white/30"
+				className={`w-full max-w-md p-6 mb-6 border-4 border-white border-dashed rounded-lg bg-white/20 text-white text-center cursor-pointer hover:bg-white/30 ${isLocked ? 'opacity-50' : ''}`}
 				onDrop={handleDrop}
 				onDragOver={handleDragOver}
 			>
-				Drag and drop folders/files here
+				{isLocked ? 'Folder Loaded' : 'Drag and drop folders/files here'}
 			</div>
-
-
-			<textarea
-				value={urlList}
-				onChange={handleUrlChange}
-				placeholder="Enter YouTube URLs (one per line)"
-				className="mb-6 p-4 rounded-lg border-2 border-white bg-transparent text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition"
-			/>
 
 			<button
 				onClick={handleUpload}
 				className="bg-white text-purple-600 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-600 hover:text-white transition"
 			>
-				Upload Videos
+				{isLocked ? 'Click to Upload...' : 'Upload Videos'}
 			</button>
 		</div>
 	);
