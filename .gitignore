@@ -54,6 +54,8 @@ server/coverage/
 # Env files (keep only in dev, not in prod repo!)
 .env
 .env.*
+*.key
+*.cert
 
 
 # Mac-specific
