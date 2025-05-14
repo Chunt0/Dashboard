@@ -8,7 +8,7 @@ import https from 'https';
 const app = express();
 
 // Environment variables setup (optional)
-const PORT = process.env.PORT || 30003;
+const PORT = process.env.PORT || 3003;
 
 // Setup upload directory
 const uploadDir = path.resolve(__dirname, 'uploads');
@@ -48,7 +48,7 @@ app.post(
 	upload.array('files', 10),
 	(req: Request, res: Response): void => {
 		const files = req.files as Express.Multer.File[] | undefined;
-		if (!files || files.length === 0) {
+		if (!files || files.length === 0 || files[0].mimetype !== 'video/mp4') {
 			res.status(400).json({ message: 'No files uploaded' });
 			return;
 		}
@@ -65,12 +65,16 @@ app.post(
 	}
 );
 
+/*
 const sslOptions = {
 	key: fs.readFileSync("/home/alan/Code/Labeling/server/server.key"),
 	cert: fs.readFileSync("/home/alan/Code/Labeling/server/server.cert"),
 };
-
 // Start server
 https.createServer(sslOptions, app).listen(PORT, () => {
+	console.log(`Server listening on https://0.0.0.0:${PORT}`);
+});
+*/
+app.listen(PORT, () => {
 	console.log(`Server listening on https://0.0.0.0:${PORT}`);
 });
