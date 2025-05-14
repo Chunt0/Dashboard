@@ -2,17 +2,10 @@ import React, { useState, DragEvent } from 'react';
 
 const UPLOAD_ENDPOINT = import.meta.env.VITE_UPLOAD_ENDPOINT;
 
-function Video() {
+function Image() {
 	const [files, setFiles] = useState<File[]>([]);
 	const [urlList, setUrlList] = useState<string>('');
 	const [isLocked, setIsLocked] = useState<boolean>(false); // State to lock the drop zone
-
-	// Handle file input change (file picker)
-	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		if (event.target.files) {
-			setFiles(Array.from(event.target.files));
-		}
-	};
 
 	// Handle URL list change
 	const handleUrlChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -112,7 +105,7 @@ function Video() {
 			onDrop={handleDrop}
 			onDragOver={handleDragOver}
 		>
-			<h2 className="text-4xl font-extrabold text-white mb-6 shadow-lg">Video Page</h2>
+			<h2 className="text-4xl font-extrabold text-white mb-6 shadow-lg">Image Upload</h2>
 
 			{/* Drag & Drop Zone */}
 			<div
@@ -133,4 +126,4 @@ function Video() {
 	);
 }
 
-export default Video;
+export default Image;

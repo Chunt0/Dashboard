@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import multer from 'multer';
+import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import fs from 'fs';
 import https from 'https';
@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3003;
 
 // Setup upload directory
 const uploadDir = path.resolve(__dirname, 'uploads');
+
 if (!fs.existsSync(uploadDir)) {
 	fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -28,7 +29,17 @@ const storage = multer.diskStorage({
 		cb(null, `${basename}-${uniqueSuffix}${ext}`);
 	}
 });
-const upload = multer({ storage });
+
+const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+	const allowedTypes = ['video/mp4'];
+	if (allowedTypes.includes(file.mimetype)) {
+		cb(null, true);
+	} else {
+		cb(null, false);
+	}
+};
+
+const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 // Middleware
 app.use(express.json());

@@ -33,21 +33,18 @@ function HealthIndicator() {
   let tooltip = healthy === null ? "Checking server..." : healthy ? "Server healthy" : "Server unreachable";
 
   return (
-    <div style={{ position: "fixed", top: 16, right: 24, zIndex: 1000 }}>
+    <div className="flex top-4 right-60 z-50"> {/* Tailwind classes for positioning */}
       <span
         title={tooltip}
+        className="inline-block w-4 h-4 rounded-full" // Tailwind classes for styling
         style={{
-          display: "inline-block",
-          width: 16,
-          height: 16,
-          borderRadius: "50%",
           background: color,
           boxShadow: "0 0 4px rgba(0,0,0,0.2)",
-          border: "2px solid #fff",
         }}
       />
     </div>
   );
+
 }
 
 export default HealthIndicator;

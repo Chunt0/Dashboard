@@ -3,10 +3,10 @@ import { NavLink } from "react-router-dom";
 
 function Navbar() {
   return (
-    <nav className="flex items-center justify-between bg-gray-900 p-4">
+    <nav className="flex items-center justify-between bg-black p-4">
       <div className="flex gap-8">
         <NavLink
-          to="/video"
+          to="/upload"
           style={({ isActive }) => ({
             color: isActive ? "#fff" : "#aaa",
             marginRight: "2rem",
@@ -14,10 +14,10 @@ function Navbar() {
             fontWeight: isActive ? "bold" : "normal"
           })}
         >
-          Video
+          Upload
         </NavLink>
         <NavLink
-          to="/image"
+          to="/qA"
           style={({ isActive }) => ({
             color: isActive ? "#fff" : "#aaa",
             marginRight: "2rem",
@@ -25,10 +25,10 @@ function Navbar() {
             fontWeight: isActive ? "bold" : "normal"
           })}
         >
-          Image
+          QA
         </NavLink>
         <NavLink
-          to="/view"
+          to="/train"
           style={({ isActive }) => ({
             color: isActive ? "#fff" : "#aaa",
             marginRight: "2rem",
@@ -36,10 +36,10 @@ function Navbar() {
             fontWeight: isActive ? "bold" : "normal"
           })}
         >
-          View
+          Train
         </NavLink>
+        <HealthIndicator />
       </div>
-      <HealthIndicator />
     </nav>
   );
 }
