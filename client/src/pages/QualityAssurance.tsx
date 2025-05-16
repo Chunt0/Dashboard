@@ -11,4 +11,3 @@ const QualityAssurance: React.FC = () => {
 };
 
 export default QualityAssurance;
-
