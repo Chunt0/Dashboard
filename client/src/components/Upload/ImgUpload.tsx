@@ -8,27 +8,28 @@ const Image: React.FC = () => {
 	const [isLocked, setIsLocked] = useState<boolean>(false); // State to lock the drop zone
 	const [logMessage, setLogMessage] = useState<string>('');
 
-	// Process the uploaded files
 	const handleUpload = async () => {
 		if (files.length > 0) {
 			setIsLocked(true); // Lock the drop zone when uploading
-			let counter = 1; // initialize counter
+			let formData = new FormData(); // initialize formData outside the loop
 			for (const file of files) {
 				if (file.size < MAX_FILE_SIZE) {
-					const formData = new FormData();
 					formData.append('files', file);
-					await fetch(UPLOAD_IMAGE_ENDPOINT, {
-						method: 'POST',
-						body: formData,
-					});
-					console.log(`Uploading ${file.name}...`); // include counter in log
-					setLogMessage(`Uploading ${file.name}...`); // include counter in log
+					console.log(`Uploading ${file.name}...`);
+					setLogMessage(`Uploading ${file.name}...`);
 				} else {
 					console.log(`File ${file.name} was too large!`);
 					setLogMessage(`File ${file.name} was too large!`);
-
 				}
-				counter++; // increment counter
+			}
+			if (formData.has('files')) { // check if formData has files
+				await fetch(UPLOAD_IMAGE_ENDPOINT, {
+					method: 'POST',
+					body: formData,
+				});
+			} else {
+				console.log("An error occurred");
+				setLogMessage("An error occurred");
 			}
 			setTimeout(() => {
 				setIsLocked(false); // Unlock the drop zone after uploading

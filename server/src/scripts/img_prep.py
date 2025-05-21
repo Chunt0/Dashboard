@@ -1,13 +1,12 @@
-import cv2
+import io
 import asyncio
 import aiohttp
 import base64
-import yt_dlp
 import os
-import subprocess
 from PIL import Image
 
 async def prep_img(img_dir: str = "./src/uploads/image/", output_root: str = "../datasets/image/"):
+    tgt_dir = os.path.join(output_root, str(max([int(name) for name in os.listdir(output_root) if name.isdigit()], default=0) + 1))
     for image in os.listdir(img_dir):
         if not image.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
             continue
@@ -15,7 +14,6 @@ async def prep_img(img_dir: str = "./src/uploads/image/", output_root: str = "..
         # take each image, find the shortest side and scale the image such that that shortest side is 1024 pixels
 
 
-        tgt_dir = os.path.join(output_root, str(max([int(name) for name in os.listdir(output_root) if name.isdigit()], default=0) + 1))
         os.makedirs(tgt_dir, exist_ok=True)
         os.makedirs(f"{tgt_dir}/completed", exist_ok=True)
         
@@ -42,7 +40,7 @@ async def prep_img(img_dir: str = "./src/uploads/image/", output_root: str = "..
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")  # Save image to buffer as PNG
         img_64 = base64.b64encode(buffered.getvalue()).decode("utf-8")  # Encode to base64
-        await create_image_label(img_64, tgt_dir, filename)
+        await create_image_label(img_64, tgt_dir, tgt_path)
 
 async def create_image_label(img_64, tgt_dir, filename):
     payload = {
@@ -62,7 +60,7 @@ async def create_image_label(img_64, tgt_dir, filename):
 
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, json=payload) as response:
-            txt_path = os.path.join(tgt_dir, filename.replace('.png', '.txt'))
+            txt_path = filename.replace('.png', '.txt')
             if response.status == 200:
                 res = await response.json()  # Parse JSON directly
                 content = res["message"]["content"]
@@ -76,7 +74,8 @@ async def create_image_label(img_64, tgt_dir, filename):
                         pass  # or write default info if needed
 
 async def main():
-    print("image prep!")
+    await prep_img()
+
 
 
 if __name__ == "__main__":
