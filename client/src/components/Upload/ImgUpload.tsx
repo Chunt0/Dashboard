@@ -1,35 +1,38 @@
 import React, { useState, DragEvent } from 'react';
 
-const UPLOAD_ENDPOINT = import.meta.env.VITE_UPLOAD_ENDPOINT;
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const UPLOAD_IMAGE_ENDPOINT = import.meta.env.VITE_UPLOAD_IMAGE_ENDPOINT;
 
-function Image() {
+const Image: React.FC = () => {
 	const [files, setFiles] = useState<File[]>([]);
-	const [urlList, setUrlList] = useState<string>('');
 	const [isLocked, setIsLocked] = useState<boolean>(false); // State to lock the drop zone
-
-	// Handle URL list change
-	const handleUrlChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-		setUrlList(event.target.value);
-	};
+	const [logMessage, setLogMessage] = useState<string>('');
 
 	// Process the uploaded files
 	const handleUpload = async () => {
 		if (files.length > 0) {
 			setIsLocked(true); // Lock the drop zone when uploading
+			let counter = 1; // initialize counter
 			for (const file of files) {
-				const formData = new FormData();
-				formData.append('files', file);
-				await fetch(UPLOAD_ENDPOINT, {
-					method: 'POST',
-					body: formData,
-				});
+				if (file.size < MAX_FILE_SIZE) {
+					const formData = new FormData();
+					formData.append('files', file);
+					await fetch(UPLOAD_IMAGE_ENDPOINT, {
+						method: 'POST',
+						body: formData,
+					});
+					console.log(`Uploading ${file.name}...`); // include counter in log
+					setLogMessage(`Uploading ${file.name}...`); // include counter in log
+				} else {
+					console.log(`File ${file.name} was too large!`);
+					setLogMessage(`File ${file.name} was too large!`);
+
+				}
+				counter++; // increment counter
 			}
-			setIsLocked(false); // Unlock the drop zone after uploading
-		}
-		// Handle URLs if needed
-		const urls = urlList.split('\n').filter(Boolean);
-		for (const url of urls) {
-			// Process each URL
+			setTimeout(() => {
+				setIsLocked(false); // Unlock the drop zone after uploading
+			}, 1000);
 		}
 	};
 
@@ -52,11 +55,8 @@ function Image() {
 
 		for (let i = 0; i < items.length; i++) {
 			const item = items[i];
-			console.log(item)
-
 			if (item.kind === 'file') {
 				const entry = item.webkitGetAsEntry();
-
 				if (entry) {
 					// Recursively read directory entries
 					const traverseFileTree = (entry: any, path = ''): Promise<File[]> => {
@@ -92,10 +92,17 @@ function Image() {
 
 		Promise.all(filePromises).then((filesArrays) => {
 			const allFiles = filesArrays.flat();
-			// Optionally, filter only videos
-			const videoFiles = allFiles.filter(f => f.type.startsWith('video/'));
-			setFiles(videoFiles);
-			setIsLocked(true); // Lock the drop zone after files are added
+			const imageFiles = allFiles.filter(f => f.type.startsWith('image/'));
+			setFiles(imageFiles);
+			if (imageFiles.length > 0) {
+				setIsLocked(true)
+				console.log(`${imageFiles.length} image files are ready to upload`);
+				setLogMessage(`${imageFiles.length} image files are ready to upload`);
+			} else {
+				setIsLocked(false);
+				console.log("No files of type 'image'");
+				setLogMessage("No files of type 'image'");
+			}
 		});
 	};
 
@@ -120,8 +127,10 @@ function Image() {
 				onClick={handleUpload}
 				className="bg-white text-purple-600 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-600 hover:text-white transition"
 			>
-				{isLocked ? 'Click to Upload...' : 'Upload Videos'}
+				{isLocked ? 'Click to Upload...' : 'Upload Images'}
 			</button>
+			<br />
+			<p className="text-4xl font-extrabold text-white mb-6 shadow-lg">{isLocked ? logMessage : 'Drag and drop your image files!'}</p>
 		</div>
 	);
 }

@@ -1,8 +1,7 @@
 import React from 'react';
 import VidUpload from '../components/Upload/VidUpload';
 import ImgUpload from '../components/Upload/ImgUpload';
-import UploadNavbar from '../components/Upload/UploadNavbar';
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Routes, Route } from "react-router-dom";
 
 const Uploading: React.FC = () => {
 	return (

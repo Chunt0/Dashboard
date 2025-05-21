@@ -1,9 +1,9 @@
 import express, { Request, Response } from 'express';
+import { spawn } from 'child_process';
 import cors from 'cors';
 import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import fs from 'fs';
-import https from 'https';
 
 const app = express();
 
@@ -20,7 +20,17 @@ if (!fs.existsSync(uploadDir)) {
 // Multer configuration
 const storage = multer.diskStorage({
 	destination: (req, file, cb) => {
-		cb(null, uploadDir);
+		const uploadPath = (file: Express.Multer.File): string => { // explicitly define return type as string
+			const mimeType = file.mimetype; // use mimetype property
+			if (mimeType === 'video/mp4') {
+				return `${uploadDir}/video`; // upload to video directory
+			} else if (mimeType.startsWith('image/')) {
+				return `${uploadDir}/image`; // upload to image directory
+			}
+			return uploadDir; // default upload path
+		};
+		const path: string = uploadPath(file);
+		cb(null, path);
 	},
 	filename: (req, file, cb) => {
 		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -31,7 +41,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
-	const allowedTypes = ['video/mp4'];
+	const allowedTypes = ['video/mp4', 'image/png', 'image/jpeg']; // allow png and jpeg
 	if (allowedTypes.includes(file.mimetype)) {
 		cb(null, true);
 	} else {
@@ -55,11 +65,12 @@ app.get('/health', (req: Request, res: Response): void => {
 });
 
 app.post(
-	'/api/upload',
+	'/api/upload/video',
 	upload.array('files', 10),
 	(req: Request, res: Response): void => {
 		const files = req.files as Express.Multer.File[] | undefined;
-		if (!files || files.length === 0 || files[0].mimetype !== 'video/mp4') {
+		// allow for images and videos
+		if (!files || files.length === 0 || (!files[0].mimetype.includes('video/mp4'))) {
 			res.status(400).json({ message: 'No files uploaded' });
 			return;
 		}
@@ -69,23 +80,82 @@ app.post(
 			mimeType: file.mimetype,
 			size: file.size,
 		}));
-		res.json({
-			message: `${files.length} files uploaded successfully`,
-			files: fileInfos,
+
+		const pythonProcess = spawn('python', ['src/scripts/vid_prep.py']);
+
+		let output = '';
+		let errorOutput = '';
+
+		pythonProcess.stdout.on('data', (data) => {
+			output += data.toString();
+		});
+
+		pythonProcess.stderr.on('data', (data) => {
+			errorOutput += data.toString();
+		});
+
+		pythonProcess.on('close', (code) => {
+			if (code === 0) {
+				res.json({
+					message: `${files.length} files uploaded successfully\n${output.trim()}`,
+					files: fileInfos,
+				});
+			} else {
+				res.status(500).json({
+					message: `${files.length} files uploaded successfully`,
+					error: errorOutput.trim(), // fix the syntax error
+				});
+			}
 		});
 	}
 );
 
-/*
-const sslOptions = {
-	key: fs.readFileSync("/home/alan/Code/Labeling/server/server.key"),
-	cert: fs.readFileSync("/home/alan/Code/Labeling/server/server.cert"),
-};
-// Start server
-https.createServer(sslOptions, app).listen(PORT, () => {
-	console.log(`Server listening on https://0.0.0.0:${PORT}`);
-});
-*/
+app.post(
+	'/api/upload/image',
+	upload.array('files', 1000),
+	(req: Request, res: Response): void => {
+		const files = req.files as Express.Multer.File[] | undefined;
+		// allow for images and videos
+		if (!files || files.length === 0 || !files[0].mimetype.startsWith('image/')) {
+			res.status(400).json({ message: 'No files uploaded' });
+			return;
+		}
+		const fileInfos = files.map(file => ({
+			originalName: file.originalname,
+			storedPath: file.path,
+			mimeType: file.mimetype,
+			size: file.size,
+		}));
+
+		const pythonProcess = spawn('python', ['src/scripts/img_prep.py']);
+
+		let output = '';
+		let errorOutput = '';
+
+		pythonProcess.stdout.on('data', (data) => {
+			output += data.toString();
+		});
+
+		pythonProcess.stderr.on('data', (data) => {
+			errorOutput += data.toString();
+		});
+
+		pythonProcess.on('close', (code) => {
+			if (code === 0) {
+				res.json({
+					message: `${files.length} files uploaded successfully\n${output.trim()}`,
+					files: fileInfos,
+				});
+			} else {
+				res.status(500).json({
+					message: `${files.length} files uploaded successfully`,
+					error: errorOutput.trim(), // fix the syntax error
+				});
+			}
+		});
+	}
+);
+
 app.listen(PORT, () => {
 	console.log(`Server listening on https://0.0.0.0:${PORT}`);
 });

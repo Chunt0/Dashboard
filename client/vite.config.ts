@@ -9,6 +9,6 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    allowedHosts: ['label.putty-ai.com']
+    allowedHosts: ['dashboard.putty-ai.com']
   }
 })

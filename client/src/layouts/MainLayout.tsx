@@ -22,7 +22,7 @@ const Layout: React.FC = () => {
       <div style={{ paddingTop: '100px' }}>
         <Routes>
           <Route path="/" element={<Splash />} />
-          <Route path="/upload" element={<Uploading />} />
+          <Route path="/upload/*" element={<Uploading />} />
           <Route path="/upload/video" element={<VidUpload />} />
           <Route path="/upload/image" element={<ImgUpload />} />
           <Route path="/qa" element={<QualityAssurance />} />
