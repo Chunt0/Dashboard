@@ -1,6 +1,6 @@
 import React, { useState, DragEvent } from 'react';
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const CHUNK_SIZE = 1 * 1024 * 1024;
 
 const UPLOAD_VIDEO_ENDPOINT = import.meta.env.VITE_UPLOAD_VIDEO_ENDPOINT;
 
@@ -8,32 +8,52 @@ const Video: React.FC = () => {
 	const [files, setFiles] = useState<File[]>([]);
 	const [isLocked, setIsLocked] = useState<boolean>(false); // State to lock the drop zone
 	const [logMessage, setLogMessage] = useState<string>('');
+	const [uploadProgress, setUploadProgress] = useState<number>(0);
+	const [isUploading, setIsUploading] = useState<boolean>(false);
 
 	// Process the uploaded files
 	const handleUpload = async () => {
 		if (files.length > 0) {
+			setIsUploading(true);
 			setIsLocked(true); // Lock the drop zone when uploading
-			let counter = 1; // initialize counter
+			let fileCount = 0; // Initialize fileCount correctly
 			for (const file of files) {
-				if (file.size < MAX_FILE_SIZE) {
+				fileCount++; // Increment fileCount for each file
+				const progressPercent = Math.round((fileCount / files.length) * 100);
+				setUploadProgress(progressPercent);
+				const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+				const fileId = generateUniqueId();
+				for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+					const start = chunkIndex * CHUNK_SIZE;
+					const end = Math.min(start + CHUNK_SIZE, file.size);
+					const chunk = file.slice(start, end);
+
 					const formData = new FormData();
-					formData.append('files', file);
+					formData.append('fileId', fileId);
+					formData.append('chunk', new Blob([chunk]), file.name);
+					formData.append('chunkIndex', String(chunkIndex));
+					formData.append('totalChunks', String(totalChunks));
+					formData.append('fileName', file.name);
+					formData.append('fileSize', String(file.size));
 					await fetch(UPLOAD_VIDEO_ENDPOINT, {
 						method: 'POST',
 						body: formData,
 					});
-					console.log(`Uploading ${file.name}...`); // include counter in log
-					setLogMessage(`Uploading ${file.name}...`); // include counter in log
-				} else {
-					console.log(`File ${file.name} was too large!`);
-					setLogMessage(`File ${file.name} was too large!`);
+
+					setLogMessage(`Uploading ${file.name}: ${chunkIndex + 1} of ${totalChunks}`);
+
 				}
-				counter++; // increment counter
 			}
+			setIsUploading(false);
+			setUploadProgress(0);
 			setTimeout(() => {
 				setIsLocked(false); // Unlock the drop zone after uploading
-			}, 500);
+			}, 800);
 		}
+	};
+
+	const generateUniqueId = (): string => {
+		return Math.random().toString(36).substr(2, 9);
 	};
 
 	// Handle drag over
@@ -116,11 +136,11 @@ const Video: React.FC = () => {
 			onDrop={handleDrop}
 			onDragOver={handleDragOver}
 		>
-			<h2 className="text-4xl font-extrabold text-white mb-6 shadow-lg">Video Upload</h2>
+			<h2 className="animate-bounce text-4xl font-extrabold text-white mb-6">Video Upload</h2>
 
 			{/* Drag & Drop Zone */}
 			<div
-				className={`w-full max-w-md p-6 mb-6 border-4 border-white border-dashed rounded-lg bg-white/20 text-white text-center cursor-pointer hover:bg-white/30 ${isLocked ? 'opacity-50' : ''}`}
+				className={`w-full max-w-md p-6 mb-6 border-4 border-white border-dashed rounded-lg bg-white/20 text-white text-center cursor-pointer hover:bg-white/30 ${isLocked ? 'opacity-50' : 'animate-pulse'}`}
 				onDrop={handleDrop}
 				onDragOver={handleDragOver}
 			>
@@ -134,7 +154,15 @@ const Video: React.FC = () => {
 				{isLocked ? 'Click to Upload...' : 'Upload Videos'}
 			</button>
 			<br />
-			<p className="text-4xl font-extrabold text-white mb-6 shadow-lg">{isLocked ? logMessage : 'Drag and drop your mp4 files!'}</p>
+
+			<p className="text-4xl font-extrabold text-white mb-6">{isLocked ? logMessage : 'Drag and drop your mp4 files!'}</p>
+			<br />
+			{isUploading && (
+				<div className="w-full bg-gray-200 rounded-full shadow-inner h-4 overflow-hidden">
+					<div className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-300 ease-in-out rounded-full" style={{ width: `${uploadProgress}%` }} // Added '%' for proper width
+					/>
+				</div>
+			)}
 		</div>
 	);
 }

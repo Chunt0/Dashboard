@@ -16,10 +16,10 @@ const Layout: React.FC = () => {
   const showUploadNavbar: boolean = ['/upload', '/upload/video', '/upload/image'].includes(location.pathname);
 
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
       {showUploadNavbar && <UploadNavbar />}
-      <div>
+      <div className="flex-1">
         <Routes>
           <Route path="/" element={<Splash />} />
           <Route path="/upload/*" element={<Uploading />} />
@@ -34,3 +34,4 @@ const Layout: React.FC = () => {
 }
 
 export default Layout;
+

@@ -10,8 +10,8 @@ const Image: React.FC = () => {
 
 	const handleUpload = async () => {
 		if (files.length > 0) {
-			setIsLocked(true); // Lock the drop zone when uploading
-			let formData = new FormData(); // initialize formData outside the loop
+			setIsLocked(true);
+			let formData = new FormData();
 			for (const file of files) {
 				if (file.size < MAX_FILE_SIZE) {
 					formData.append('files', file);
@@ -22,7 +22,7 @@ const Image: React.FC = () => {
 					setLogMessage(`File ${file.name} was too large!`);
 				}
 			}
-			if (formData.has('files')) { // check if formData has files
+			if (formData.has('files')) {
 				await fetch(UPLOAD_IMAGE_ENDPOINT, {
 					method: 'POST',
 					body: formData,
@@ -32,7 +32,7 @@ const Image: React.FC = () => {
 				setLogMessage("An error occurred");
 			}
 			setTimeout(() => {
-				setIsLocked(false); // Unlock the drop zone after uploading
+				setIsLocked(false);
 			}, 1000);
 		}
 	};
@@ -113,7 +113,7 @@ const Image: React.FC = () => {
 			onDrop={handleDrop}
 			onDragOver={handleDragOver}
 		>
-			<h2 className="text-4xl font-extrabold text-white mb-6 shadow-lg">Image Upload</h2>
+			<h2 className="animate-bounce text-4xl font-extrabold text-white mb-6 shadow-lg">Image Upload</h2>
 
 			{/* Drag & Drop Zone */}
 			<div

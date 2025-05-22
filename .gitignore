@@ -73,6 +73,7 @@ Desktop.ini
 $RECYCLE.BIN/
 
 */uploads/
+server/src/temp/
 
 # Optional: Yarn/Pnpm
 .yarn/
