@@ -19,7 +19,7 @@ const Layout: React.FC = () => {
     <div>
       <Navbar />
       {showUploadNavbar && <UploadNavbar />}
-      <div style={{ paddingTop: '100px' }}>
+      <div>
         <Routes>
           <Route path="/" element={<Splash />} />
           <Route path="/upload/*" element={<Uploading />} />

@@ -1,6 +1,6 @@
 import React, { useState, DragEvent } from 'react';
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 50 MB
 const UPLOAD_IMAGE_ENDPOINT = import.meta.env.VITE_UPLOAD_IMAGE_ENDPOINT;
 
 const Image: React.FC = () => {
