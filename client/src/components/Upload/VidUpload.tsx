@@ -18,7 +18,6 @@ const Video: React.FC = () => {
 			setIsLocked(true); // Lock the drop zone when uploading
 			let fileCount = 0; // Initialize fileCount correctly
 			for (const file of files) {
-				fileCount++; // Increment fileCount for each file
 				const progressPercent = Math.round((fileCount / files.length) * 100);
 				setUploadProgress(progressPercent);
 				const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -40,9 +39,10 @@ const Video: React.FC = () => {
 						body: formData,
 					});
 
-					setLogMessage(`Uploading ${file.name}: ${chunkIndex + 1} of ${totalChunks}`);
+					setLogMessage(`Uploading and labeling ${file.name}... this may take some time`);
 
 				}
+				fileCount++; // Increment fileCount for each file
 			}
 			setIsUploading(false);
 			setUploadProgress(0);
