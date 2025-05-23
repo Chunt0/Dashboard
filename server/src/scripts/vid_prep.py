@@ -5,7 +5,6 @@ import base64
 import os
 import subprocess
 
-
 async def clip_video(vids_dir: str = "./src/uploads/", output_root: str = "../datasets/video/"):
     for video in os.listdir(vids_dir):
         if not video.lower().endswith(".mp4"):

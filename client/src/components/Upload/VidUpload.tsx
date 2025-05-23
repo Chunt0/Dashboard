@@ -34,6 +34,7 @@ const Video: React.FC = () => {
 					formData.append('totalChunks', String(totalChunks));
 					formData.append('fileName', file.name);
 					formData.append('fileSize', String(file.size));
+					console.log(chunk);
 					await fetch(UPLOAD_VIDEO_ENDPOINT, {
 						method: 'POST',
 						body: formData,

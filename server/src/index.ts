@@ -1,3 +1,4 @@
+import ffmpeg from 'fluent-ffmpeg';
 import express, { Request, Response } from 'express';
 import { spawn } from 'child_process';
 import cors from 'cors';
@@ -90,8 +91,9 @@ app.post(
 		uploadsMap[fileId].receivedChunks++;
 
 		if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
+			const tempPath = path.join(__dirname, 'uploads', `temp_${fileName}`)
 			const finalPath = path.join(__dirname, 'uploads', fileName);
-			const writeStream = fs.createWriteStream(finalPath);
+			const writeStream = fs.createWriteStream(tempPath);
 
 			for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
 				const chunkPath = path.join(folderPath, `chunk_${i}`);
@@ -100,6 +102,26 @@ app.post(
 			}
 			writeStream.end();
 			fs.rmSync(folderPath, { recursive: true, force: true });
+
+			const resizeVideo = async (tempVidPath: string, finalVidPath: string): Promise<void> => {
+				await new Promise<void>((resolve, reject) => {
+					ffmpeg(tempVidPath)
+						.outputOptions('-vf', 'scale=-2:720') // Resize to 720px height, maintain aspect ratio
+						.save(finalVidPath) // Output video at the same path as input
+						.on('end', () => {
+							console.log('Video resized successfully');
+							resolve();
+						})
+						.on('error', (err) => {
+							console.error('Error resizing video', err);
+							reject(err);
+						});
+				});
+			};
+
+			resizeVideo(tempPath, finalPath); // Call the function with await
+			fs.rmSync(tempPath);
+
 
 			const pythonProcess = spawn('python', ['src/scripts/vid_prep.py']);
 
