@@ -37,7 +37,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallb
 	}
 };
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 interface UploadProgress {
 	totalChunks: number;
@@ -64,11 +64,12 @@ app.get('/health', (req: Request, res: Response): void => {
 app.post(
 	'/api/upload/video',
 	upload.single('chunk'),
-	(req: Request, res: Response): void => {
-		const { fileId, chunkIndex, totalChunks, fileName, fileSize } = req.body;
+	async (req: Request, res: Response): Promise<void> => {
+		const { fileId, chunkIndex, totalChunks, fileName, fileSize, batchName } = req.body;
+		console.log(req);
 		const chunkFile = req.file;
 
-		if (!fileId || !chunkIndex || !fileName || !chunkFile) {
+		if (!fileId || !chunkIndex || !fileName || !chunkFile || batchName === '') {
 			return res.status(400).send(`request body:${req.body}`) as unknown as void;
 		}
 
@@ -119,7 +120,7 @@ app.post(
 				});
 			};
 
-			resizeVideo(tempPath, finalPath); // Call the function with await
+			await resizeVideo(tempPath, finalPath); // Call the function with await
 			fs.rmSync(tempPath);
 
 
@@ -160,46 +161,10 @@ app.post(
 
 app.post(
 	'/api/upload/image',
-	upload.array('files', 1000),
-	(req: Request, res: Response): void => {
-		const files = req.files as Express.Multer.File[] | undefined;
-		// allow for images and videos
-		if (!files || files.length === 0 || !files[0].mimetype.startsWith('image/')) {
-			res.status(400).json({ message: 'No files uploaded' });
-			return;
-		}
-		const fileInfos = files.map(file => ({
-			originalName: file.originalname,
-			storedPath: file.path,
-			mimeType: file.mimetype,
-			size: file.size,
-		}));
-
-		const pythonProcess = spawn('python', ['src/scripts/img_prep.py']);
-
-		let output = '';
-		let errorOutput = '';
-
-		pythonProcess.stdout.on('data', (data) => {
-			output += data.toString();
-		});
-
-		pythonProcess.stderr.on('data', (data) => {
-			errorOutput += data.toString();
-		});
-
-		pythonProcess.on('close', (code) => {
-			if (code === 0) {
-				res.json({
-					message: `${files.length} files uploaded successfully\n${output.trim()}`,
-					files: fileInfos,
-				});
-			} else {
-				res.status(500).json({
-					message: `${files.length} files uploaded successfully`,
-					error: errorOutput.trim(), // fix the syntax error
-				});
-			}
+	upload.single('file'),
+	async (req: Request, res: Response): Promise<void> => {
+		res.json({
+			message: 'This is the image api endpoint... nothing is happening here.'
 		});
 	}
 );

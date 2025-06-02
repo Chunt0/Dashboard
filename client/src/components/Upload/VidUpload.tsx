@@ -3,6 +3,7 @@ import React, { useState, DragEvent } from 'react';
 const CHUNK_SIZE = 1 * 1024 * 1024;
 
 const UPLOAD_VIDEO_ENDPOINT = import.meta.env.VITE_UPLOAD_VIDEO_ENDPOINT;
+const LABEL_VIDEOS_ENDPOINT = import.meta.env.VITE_LABEL_VIDEOS_ENDPOINT;
 
 const Video: React.FC = () => {
 	const [files, setFiles] = useState<File[]>([]);
@@ -10,13 +11,14 @@ const Video: React.FC = () => {
 	const [logMessage, setLogMessage] = useState<string>('');
 	const [uploadProgress, setUploadProgress] = useState<number>(0);
 	const [isUploading, setIsUploading] = useState<boolean>(false);
+	//const [filesUploaded, setFilesUploaded] = useState<boolean>(false);
+	const [batchName, setBatchName] = useState<string>('');
 
-	// Process the uploaded files
 	const handleUpload = async () => {
 		if (files.length > 0) {
 			setIsUploading(true);
-			setIsLocked(true); // Lock the drop zone when uploading
-			let fileCount = 0; // Initialize fileCount correctly
+			setIsLocked(true);
+			let fileCount = 0;
 			for (const file of files) {
 				const progressPercent = Math.round((fileCount / files.length) * 100);
 				setUploadProgress(progressPercent);
@@ -34,7 +36,8 @@ const Video: React.FC = () => {
 					formData.append('totalChunks', String(totalChunks));
 					formData.append('fileName', file.name);
 					formData.append('fileSize', String(file.size));
-					console.log(chunk);
+					formData.append('batchName', batchName);
+					console.log(batchName);
 					await fetch(UPLOAD_VIDEO_ENDPOINT, {
 						method: 'POST',
 						body: formData,
@@ -43,14 +46,17 @@ const Video: React.FC = () => {
 					setLogMessage(`Uploading and labeling ${file.name}... this may take some time`);
 
 				}
-				fileCount++; // Increment fileCount for each file
+				fileCount++;
 			}
 			setIsUploading(false);
 			setUploadProgress(0);
-			setTimeout(() => {
-				setIsLocked(false); // Unlock the drop zone after uploading
-			}, 800);
+			//setFilesUploaded(true);
+			setTimeout(() => { setIsLocked(false); }, 800);
 		}
+	};
+
+	const handleLabelFiles = async () => {
+		await fetch(LABEL_VIDEOS_ENDPOINT)
 	};
 
 	const generateUniqueId = (): string => {
@@ -94,6 +100,8 @@ const Video: React.FC = () => {
 									resolve([file]);
 								});
 							} else if (entry.isDirectory) {
+								setBatchName(entry.name);
+								console.log(batchName);
 								const dirReader = (entry as any).createReader();
 								dirReader.readEntries((entries: any[]) => {
 									const filesInDir: Promise<File[]>[] = entries.map((ent) =>
@@ -148,12 +156,14 @@ const Video: React.FC = () => {
 				{isLocked ? 'Folder Loaded' : 'Drag and drop folders/files here'}
 			</div>
 
-			<button
-				onClick={handleUpload}
-				className="bg-white text-purple-600 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-600 hover:text-white transition"
-			>
-				{isLocked ? 'Click to Upload...' : 'Upload Videos'}
-			</button>
+			{!isUploading && isLocked && (
+				<button
+					onClick={handleUpload}
+					className="bg-white text-purple-600 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-600 hover:text-white transition"
+				>
+					Click to Upload...
+				</button>
+			)}
 			<br />
 
 			<p className="text-4xl font-extrabold text-white mb-6">{isLocked ? logMessage : 'Drag and drop your mp4 files!'}</p>
