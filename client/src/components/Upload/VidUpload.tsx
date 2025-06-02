@@ -11,7 +11,6 @@ const Video: React.FC = () => {
 	const [logMessage, setLogMessage] = useState<string>('');
 	const [uploadProgress, setUploadProgress] = useState<number>(0);
 	const [isUploading, setIsUploading] = useState<boolean>(false);
-	//const [filesUploaded, setFilesUploaded] = useState<boolean>(false);
 	const [batchName, setBatchName] = useState<string>('');
 
 	const handleUpload = async () => {
@@ -99,7 +98,9 @@ const Video: React.FC = () => {
 									resolve([file]);
 								});
 							} else if (entry.isDirectory) {
-								setBatchName(entry.name);
+								if (batchName === '') {
+									setBatchName(entry.name);
+								}
 								const dirReader = (entry as any).createReader();
 								dirReader.readEntries((entries: any[]) => {
 									const filesInDir: Promise<File[]>[] = entries.map((ent) =>

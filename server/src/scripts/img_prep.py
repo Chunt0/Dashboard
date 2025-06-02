@@ -1,12 +1,13 @@
 import io
+import argparse
 import asyncio
 import aiohttp
 import base64
 import os
 from PIL import Image
 
-async def prep_img(img_dir: str = "./src/uploads/image/", output_root: str = "../datasets/image/"):
-    tgt_dir = os.path.join(output_root, str(max([int(name) for name in os.listdir(output_root) if name.isdigit()], default=0) + 1))
+async def prep_img(batch_name: str, img_dir: str = "./src/uploads/", output_root: str = "../datasets/image/"):
+    tgt_dir = os.path.join(output_root, batch_name)
     for image in os.listdir(img_dir):
         if not image.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
             continue
@@ -44,11 +45,11 @@ async def prep_img(img_dir: str = "./src/uploads/image/", output_root: str = "..
 
 async def create_image_label(img_64, tgt_dir, filename):
     payload = {
-        "model": "llama4",
+        "model": "gemma3:27b",
         "messages": [
             {
                 "role": "user",
-                "content": "create a comma separated image label describing this picture. only return this label, no extra commentary, no quotation marks, and no redundant words. make sure this label contains cinematographic directions, the label will be used to train an image2video model.",
+                "content": "create a comma separated image label describing this picture. only return this label, no extra commentary, no quotation marks, and no redundant words. the label will be used to train a text2image model.",
                 "images": [img_64]
             }
         ],
@@ -74,7 +75,10 @@ async def create_image_label(img_64, tgt_dir, filename):
                         pass  # or write default info if needed
 
 async def main():
-    await prep_img()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-dir', type=str, required=True)
+    args = parser.parse_args()
+    await prep_img(args.dir)
 
 
 

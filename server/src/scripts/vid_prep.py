@@ -4,15 +4,16 @@ import aiohttp
 import base64
 import os
 import subprocess
+import argparse
 
-async def clip_video(vids_dir: str = "./src/uploads/", output_root: str = "../datasets/video/"):
+async def clip_video(batch_name, vids_dir: str = "./src/uploads/", output_root: str = "../datasets/video/"):
     for video in os.listdir(vids_dir):
         if not video.lower().endswith(".mp4"):
             continue
 
         base, ext = os.path.splitext(video)
         inp_path = os.path.join(vids_dir, video)
-        tgt_dir = os.path.join(output_root, base)
+        tgt_dir = os.path.join(output_root, batch_name)
         os.makedirs(tgt_dir, exist_ok=True)
         os.makedirs(f"{tgt_dir}/completed", exist_ok=True)
 
@@ -26,14 +27,15 @@ async def clip_video(vids_dir: str = "./src/uploads/", output_root: str = "../da
         for filename in os.listdir(tgt_dir):
             if filename.endswith('.mp4'):
                 video_path = os.path.join(tgt_dir, filename)  # Construct video path
-                cap = cv2.VideoCapture(video_path)  # Open the video file
-                ret, frame = cap.read()  # Read the first frame
-                if ret:
-                    _, img_encoded = cv2.imencode('.jpg', frame)  # Encode the frame as JPEG
-                    img_64 = base64.b64encode(img_encoded).decode('utf-8')  # Convert to base64
-                cap.release()  # Release the video capture object
-
-                await create_image_label(img_64, tgt_dir, filename)
+                txt_file_path = os.path.splitext(video_path)[0] + '.txt'  # Corresponding .txt file path
+                if not os.path.exists(txt_file_path):  # If .txt file does not exist
+                    cap = cv2.VideoCapture(video_path)  # Open the video file
+                    ret, frame = cap.read()  # Read the first frame
+                    if ret:
+                        _, img_encoded = cv2.imencode('.jpg', frame)  # Encode the frame as JPEG
+                        img_64 = base64.b64encode(img_encoded).decode('utf-8')  # Convert to base64
+                        await create_image_label(img_64, tgt_dir, filename)  # Create image label if .txt does not exist
+                    cap.release()  # Release the video capture object
 
 async def create_image_label(img_64, tgt_dir, filename):
     payload = {
@@ -67,7 +69,10 @@ async def create_image_label(img_64, tgt_dir, filename):
                         pass  # or write default info if needed
 
 async def main():
-    await clip_video()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-dir', type=str, required=True)
+    args = parser.parse_args()
+    await clip_video(args.dir)
 
 
 if __name__ == "__main__":

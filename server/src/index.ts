@@ -67,8 +67,6 @@ app.post(
 	upload.single('chunk'),
 	async (req: Request, res: Response): Promise<void> => {
 		const { fileId, chunkIndex, totalChunks, fileName, fileSize, batchName } = req.body;
-		console.log(req.body);
-		console.log(req.file);
 		const chunkFile = req.file;
 
 		if (!fileId || !chunkIndex || !fileName || !chunkFile || batchName === '') {
@@ -127,7 +125,9 @@ app.post(
 			fs.rmSync(tempPath);
 
 
-			const pythonProcess = spawn('python', ['src/scripts/vid_prep.py']);
+			const scriptPath = 'src/scripts/vid_prep.py';
+			const args = ['-dir', `${batchName}`];
+			const pythonProcess = spawn('python', [scriptPath, ...args]);
 
 			let output = '';
 			let errorOutput = '';
@@ -164,11 +164,81 @@ app.post(
 
 app.post(
 	'/api/upload/images',
-	upload.single('file'),
+	upload.single('chunk'),
 	async (req: Request, res: Response): Promise<void> => {
-		res.json({
-			message: 'This is the image api endpoint... nothing is happening here.'
-		});
+		const { fileId, chunkIndex, totalChunks, fileName, fileSize, batchName } = req.body;
+		const chunkFile = req.file;
+
+		if (!fileId || !chunkIndex || !fileName || !chunkFile || batchName === '') {
+			return res.status(400).send(`request body:${req.body}`) as unknown as void;
+		}
+
+		const folderPath = path.join(__dirname, 'temp', fileId);
+		if (!fs.existsSync(folderPath)) {
+			fs.mkdirSync(folderPath, { recursive: true });
+		}
+		const chunkPath = path.join(folderPath, `chunk_${chunkIndex}`);
+		fs.renameSync(chunkFile.path, chunkPath);
+
+		if (!uploadsMap[fileId]) {
+			uploadsMap[fileId] = {
+				totalChunks: parseInt(totalChunks),
+				receivedChunks: 0,
+				fileName,
+				folderPath,
+				batchName
+			}
+		}
+
+		uploadsMap[fileId].receivedChunks++;
+
+		if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
+			const finalPath = path.join(__dirname, 'uploads', fileName);
+			const writeStream = fs.createWriteStream(finalPath);
+
+			for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
+				const chunkPath = path.join(folderPath, `chunk_${i}`);
+				const data = fs.readFileSync(chunkPath);
+				writeStream.write(data);
+			}
+			writeStream.end();
+			fs.rmSync(folderPath, { recursive: true, force: true });
+
+
+			const scriptPath = 'src/scripts/img_prep.py';
+			const args = ['-dir', `${batchName}`];
+			const pythonProcess = spawn('python', [scriptPath, ...args]);
+
+			let output = '';
+			let errorOutput = '';
+
+			pythonProcess.stdout.on('data', (data) => {
+				output += data.toString();
+			});
+
+			pythonProcess.stderr.on('data', (data) => {
+				errorOutput += data.toString();
+			});
+
+			delete uploadsMap[fileId];
+
+			pythonProcess.on('close', (code) => {
+				if (code === 0) {
+					res.json({
+						message: `${output.trim()}`,
+					});
+				} else {
+					res.status(500).json({
+						message: 'leaving blank for now!',
+						error: errorOutput.trim(),
+					});
+				}
+			});
+		} else {
+			res.json({
+				message: `Chunk ${chunkIndex} received`,
+			});
+		}
 	}
 );
 

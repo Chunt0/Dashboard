@@ -9,6 +9,7 @@ const Image: React.FC = () => {
 	const [logMessage, setLogMessage] = useState<string>('');
 	const [uploadProgress, setUploadProgress] = useState<number>(0);
 	const [isUploading, setIsUploading] = useState<boolean>(false);
+	const [batchName, setBatchName] = useState<string>('');
 
 	const handleUpload = async () => {
 		if (files.length > 0) {
@@ -31,6 +32,8 @@ const Image: React.FC = () => {
 					formData.append('totalChunks', String(totalChunks));
 					formData.append('fileName', file.name);
 					formData.append('fileSize', String(file.size));
+					formData.append('batchName', String(batchName));
+
 					await fetch(UPLOAD_IMAGES_ENDPOINT, {
 						method: 'POST',
 						body: formData,
@@ -44,6 +47,7 @@ const Image: React.FC = () => {
 			}
 			setIsUploading(false);
 			setUploadProgress(0);
+			setBatchName('');
 			setTimeout(() => {
 				setIsLocked(false);
 			}, 1000);
@@ -61,7 +65,7 @@ const Image: React.FC = () => {
 	};
 
 	// Handle drop
-	const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+	const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
 		e.stopPropagation();
 
@@ -88,6 +92,9 @@ const Image: React.FC = () => {
 									resolve([file]);
 								});
 							} else if (entry.isDirectory) {
+								if (batchName === '') {
+									setBatchName(entry.name);
+								}
 								const dirReader = (entry as any).createReader();
 								dirReader.readEntries((entries: any[]) => {
 									const filesInDir: Promise<File[]>[] = entries.map((ent) =>
@@ -103,7 +110,7 @@ const Image: React.FC = () => {
 						});
 					};
 
-					filePromises.push(traverseFileTree(entry));
+					await filePromises.push(traverseFileTree(entry));
 				}
 			}
 		}
@@ -141,12 +148,14 @@ const Image: React.FC = () => {
 				{isLocked ? 'Folder Loaded' : 'Drag and drop folders/files here'}
 			</div>
 
-			<button
-				onClick={handleUpload}
-				className="bg-white text-purple-600 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-600 hover:text-white transition"
-			>
-				{isLocked ? 'Click to Upload...' : 'Upload Images'}
-			</button>
+			{!isUploading && isLocked && (
+				<button
+					onClick={handleUpload}
+					className="bg-white text-purple-600 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-600 hover:text-white transition"
+				>
+					Click to Upload...
+				</button>
+			)}
 			<br />
 			<p className="text-4xl font-extrabold text-white mb-6">{isLocked ? logMessage : 'Drag and drop your image files!'}</p>
 			<br />
