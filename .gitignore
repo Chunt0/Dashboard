@@ -36,7 +36,7 @@ server/.env.local
 server/.env.development.local
 server/.env.test.local
 server/.env.production.local
-server/src/uploads/
+server/uploads/
 server/logs/
 
 # TypeScript
@@ -71,9 +71,6 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-*/uploads/
-server/src/temp/
 
 # Optional: Yarn/Pnpm
 .yarn/

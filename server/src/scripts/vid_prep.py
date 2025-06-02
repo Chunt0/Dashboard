@@ -6,7 +6,7 @@ import os
 import subprocess
 import argparse
 
-async def clip_video(batch_name, vids_dir: str = "./src/uploads/", output_root: str = "../datasets/video/"):
+async def clip_video(batch_name, vids_dir: str = "./uploads/", output_root: str = "../datasets/"):
     for video in os.listdir(vids_dir):
         if not video.lower().endswith(".mp4"):
             continue

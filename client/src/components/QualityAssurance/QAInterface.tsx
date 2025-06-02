@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+// my full stack app is structured with a root directory which contains the client dir, server dir, datasets dir. this is a tsx file for QAInterface in client/src/components/QualityAssurance/ i need it to grab all the different folder names in datasets/image and datasets/video and then add them to the folder selection drop down. once one is selected that folder will be the path that will be used for further logic
 const QAInterface: React.FC = () => {
 	const [folder, setFolder] = useState<string>(''); // Add logic to select a folder
 	const [label, setLabel] = useState<string>('');

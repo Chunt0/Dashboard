@@ -6,7 +6,7 @@ import base64
 import os
 from PIL import Image
 
-async def prep_img(batch_name: str, img_dir: str = "./src/uploads/", output_root: str = "../datasets/image/"):
+async def prep_img(batch_name: str, img_dir: str = "./uploads/", output_root: str = "../datasets/"):
     tgt_dir = os.path.join(output_root, batch_name)
     for image in os.listdir(img_dir):
         if not image.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
