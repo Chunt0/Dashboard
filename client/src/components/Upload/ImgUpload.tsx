@@ -1,7 +1,7 @@
 import React, { useState, DragEvent } from 'react';
 
 const CHUNK_SIZE = 1024 * 1024;
-const UPLOAD_IMAGE_ENDPOINT = import.meta.env.VITE_UPLOAD_IMAGE_ENDPOINT;
+const UPLOAD_IMAGES_ENDPOINT = import.meta.env.VITE_UPLOAD_IMAGES_ENDPOINT;
 
 const Image: React.FC = () => {
 	const [files, setFiles] = useState<File[]>([]);
@@ -31,8 +31,7 @@ const Image: React.FC = () => {
 					formData.append('totalChunks', String(totalChunks));
 					formData.append('fileName', file.name);
 					formData.append('fileSize', String(file.size));
-					console.log(chunk);
-					await fetch(UPLOAD_IMAGE_ENDPOINT, {
+					await fetch(UPLOAD_IMAGES_ENDPOINT, {
 						method: 'POST',
 						body: formData,
 					});

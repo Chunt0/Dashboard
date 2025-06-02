@@ -37,7 +37,7 @@ async def clip_video(vids_dir: str = "./src/uploads/", output_root: str = "../da
 
 async def create_image_label(img_64, tgt_dir, filename):
     payload = {
-        "model": "llama4",
+        "model": "gemma3:27b",
         "messages": [
             {
                 "role": "user",

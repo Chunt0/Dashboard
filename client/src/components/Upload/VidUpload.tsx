@@ -2,7 +2,7 @@ import React, { useState, DragEvent } from 'react';
 
 const CHUNK_SIZE = 1 * 1024 * 1024;
 
-const UPLOAD_VIDEO_ENDPOINT = import.meta.env.VITE_UPLOAD_VIDEO_ENDPOINT;
+const UPLOAD_VIDEOS_ENDPOINT = import.meta.env.VITE_UPLOAD_VIDEOS_ENDPOINT;
 const LABEL_VIDEOS_ENDPOINT = import.meta.env.VITE_LABEL_VIDEOS_ENDPOINT;
 
 const Video: React.FC = () => {
@@ -37,8 +37,7 @@ const Video: React.FC = () => {
 					formData.append('fileName', file.name);
 					formData.append('fileSize', String(file.size));
 					formData.append('batchName', batchName);
-					console.log(batchName);
-					await fetch(UPLOAD_VIDEO_ENDPOINT, {
+					await fetch(UPLOAD_VIDEOS_ENDPOINT, {
 						method: 'POST',
 						body: formData,
 					});
@@ -51,13 +50,13 @@ const Video: React.FC = () => {
 			setIsUploading(false);
 			setUploadProgress(0);
 			//setFilesUploaded(true);
+			setBatchName('');
 			setTimeout(() => { setIsLocked(false); }, 800);
 		}
 	};
 
-	const handleLabelFiles = async () => {
-		await fetch(LABEL_VIDEOS_ENDPOINT)
-	};
+	//const handleLabelFiles = async () => {
+	//};
 
 	const generateUniqueId = (): string => {
 		return Math.random().toString(36).substr(2, 9);
@@ -70,7 +69,7 @@ const Video: React.FC = () => {
 	};
 
 	// Handle drop
-	const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+	const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
 		e.stopPropagation();
 
@@ -101,7 +100,6 @@ const Video: React.FC = () => {
 								});
 							} else if (entry.isDirectory) {
 								setBatchName(entry.name);
-								console.log(batchName);
 								const dirReader = (entry as any).createReader();
 								dirReader.readEntries((entries: any[]) => {
 									const filesInDir: Promise<File[]>[] = entries.map((ent) =>
@@ -117,14 +115,13 @@ const Video: React.FC = () => {
 						});
 					};
 
-					filePromises.push(traverseFileTree(entry));
+					await filePromises.push(traverseFileTree(entry));
 				}
 			}
 		}
 
 		Promise.all(filePromises).then((filesArrays) => {
 			const allFiles = filesArrays.flat();
-			// Optionally, filter only videos
 			const videoFiles = allFiles.filter(f => f.type.startsWith('video/mp4'));
 			setFiles(videoFiles);
 			if (videoFiles.length > 0) {

@@ -37,13 +37,14 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallb
 	}
 };
 
-const upload = multer({ storage: storage, fileFilter: fileFilter });
+const upload = multer({ storage: storage });
 
 interface UploadProgress {
 	totalChunks: number;
 	receivedChunks: number;
 	fileName: string;
 	folderPath: string;
+	batchName: string;
 }
 
 const uploadsMap: Record<string, UploadProgress> = {};
@@ -62,11 +63,12 @@ app.get('/health', (req: Request, res: Response): void => {
 });
 
 app.post(
-	'/api/upload/video',
+	'/api/upload/videos',
 	upload.single('chunk'),
 	async (req: Request, res: Response): Promise<void> => {
 		const { fileId, chunkIndex, totalChunks, fileName, fileSize, batchName } = req.body;
-		console.log(req);
+		console.log(req.body);
+		console.log(req.file);
 		const chunkFile = req.file;
 
 		if (!fileId || !chunkIndex || !fileName || !chunkFile || batchName === '') {
@@ -85,7 +87,8 @@ app.post(
 				totalChunks: parseInt(totalChunks),
 				receivedChunks: 0,
 				fileName,
-				folderPath
+				folderPath,
+				batchName
 			}
 		}
 
@@ -120,7 +123,7 @@ app.post(
 				});
 			};
 
-			await resizeVideo(tempPath, finalPath); // Call the function with await
+			await resizeVideo(tempPath, finalPath);
 			fs.rmSync(tempPath);
 
 
@@ -147,7 +150,7 @@ app.post(
 				} else {
 					res.status(500).json({
 						message: 'leaving blank for now!',
-						error: errorOutput.trim(), // fix the syntax error
+						error: errorOutput.trim(),
 					});
 				}
 			});
@@ -160,7 +163,7 @@ app.post(
 );
 
 app.post(
-	'/api/upload/image',
+	'/api/upload/images',
 	upload.single('file'),
 	async (req: Request, res: Response): Promise<void> => {
 		res.json({
