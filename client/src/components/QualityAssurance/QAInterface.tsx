@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
-// my full stack app is structured with a root directory which contains the client dir, server dir, datasets dir. this is a tsx file for QAInterface in client/src/components/QualityAssurance/ i need it to grab all the different folder names in datasets/image and datasets/video and then add them to the folder selection drop down. once one is selected that folder will be the path that will be used for further logic
+import React, { useEffect, useState } from 'react';
+
+const GET_FOLDERS_ENDPOINT = import.meta.env.VITE_GET_FOLDERS_ENDPOINT;
+
 const QAInterface: React.FC = () => {
 	const [folder, setFolder] = useState<string>(''); // Add logic to select a folder
 	const [label, setLabel] = useState<string>('');
 	const [notes, setNotes] = useState<string>('');
 	const [items, setItems] = useState<{ media: string; text: string }[]>([]); // Hold media and text items
 	const [currentIndex, setCurrentIndex] = useState<number>(0); // Track current item index
+	const [folders, setFolders] = useState<string[]>([]); // Hold folder names
+
+	useEffect(() => {
+		const fetchFolders = async () => {
+			const response = await fetch(GET_FOLDERS_ENDPOINT); // Fetch folder names from the endpoint
+			const data = await response.json(); // Parse the JSON response
+			setFolders(data); // Set folder names to state
+			console.log(data);
+		};
+		fetchFolders();
+	}, []);
 
 	const handleFolderSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		setFolder(e.target.value);
@@ -33,6 +46,9 @@ const QAInterface: React.FC = () => {
 			<select className="mb-4 p-2 border border-gray-300 rounded" onChange={handleFolderSelection}>
 				{/* Populate with folders */}
 				<option value="">Select Folder</option>
+				{folders.map((folderName) => (
+					<option key={folderName} value={folderName}>{folderName}</option>
+				))}
 			</select>
 
 			{items.length > 0 && (
