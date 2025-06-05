@@ -31,23 +31,91 @@ router.post('/load', (req: Request, res: Response): void => {
         const files = fs.readdirSync(dataDir);
         const mediaFile = files.find(file => file.endsWith('.mp4') || file.endsWith('.png'));
         const textFile = mediaFile ? mediaFile.replace(/\.(mp4|png)$/, '.txt') : null;
-        const mediaFilePath = mediaFile ? path.join(dataDir, mediaFile) : null;
         const textFilePath = textFile ? path.join(dataDir, textFile) : null;
-
-        if (mediaFilePath) {
-                res.download(mediaFilePath); // Send media file
-        }
-
+        let label = null;
         if (textFilePath) {
-                res.download(textFilePath); // Send text file, if it exists
-        } else {
-                res.json({ status: 'ok', mediaFile, textFile: null }); // Send only media file if text file doesn't exist
+                // Read the text file into a string synchronously
+                label = fs.readFileSync(textFilePath, 'utf8');
         }
+
+        res.json({ status: 'ok', label, mediaFile }); // Send only media file if text file doesn't exist
 
 });
 
+router.post('/load/:folderId/:mediaId', (req: Request, res: Response): void => {
+        const { folderId, mediaId } = req.params;
+        console.log(folderId);
+        console.log(mediaId);
+        const mediaFilePath = path.join(datasetsDir, folderId, mediaId);
+        if (!mediaFilePath || !fs.existsSync(mediaFilePath)) {
+                res.status(400).send('Media Not Found');
+        }
+        let contentType = ''
+        if (mediaId.endsWith('.mp4')) {
+                contentType = 'video/mp4';
+        } else {
+                contentType = 'image/png';
+        }
+        const stat = fs.statSync(mediaFilePath)
+        const fileSize = stat.size;
+        const range = req.headers.range;
+        if (range) {
+                const parts = range.replace(/bytes=/, '').split('-');
+                const start = parseInt(parts[0], 10);
+                const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+                if (start >= fileSize || end >= fileSize) {
+                        res.status(416).send('Requested Range Not Satisfiable');
+                        return;
+                }
+
+                const chunkSize = end - start + 1;
+                const file = fs.createReadStream(mediaFilePath, { start, end });
+                res.writeHead(206, {
+                        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                        'Accept-Ranges': 'bytes',
+                        'Content-Length': chunkSize,
+                        'Content-Type': contentType,
+
+                });
+                file.pipe(res);
+        } else {
+                res.writeHead(206, {
+                        'Content-Length': fileSize,
+                        'Content-Type': contentType,
+                });
+                fs.createReadStream(mediaFilePath).pipe(res);
+        }
+});
+
 router.post('/upload', (req: Request, res: Response): void => {
-        res.json({ status: 'ok' });
+        const { folder, mediaFile, label, removeMedia } = req.body;
+        // construct current media path
+        const currentMediaPath = path.join(datasetsDir, folder, mediaFile);
+        const destMediaPath = path.join(datasetsDir, folder, 'completed', mediaFile);
+
+        const textFile = mediaFile.replace(/\.(mp4|png)$/, '.txt');
+        const currentTextPath = path.join(datasetsDir, folder, textFile);
+        const destTextPath = path.join(datasetsDir, folder, 'completed', textFile);
+
+        if (removeMedia) {
+                fs.rmSync(currentMediaPath);
+                fs.rmSync(currentTextPath);
+                res.json({ status: 'ok', message: 'Media and corresponding text file has been deleted.' })
+        } else {
+                fs.cpSync(currentMediaPath, destMediaPath);
+                fs.writeFile(destTextPath, label, (err) => {
+                        if (err) {
+                                console.error('Error writing file:', err);
+                        } else {
+                                console.log('File saved successfully at', destTextPath);
+                        }
+                });
+                fs.rmSync(currentMediaPath);
+                fs.rmSync(currentTextPath);
+                res.json({ status: 'ok', message: 'Media and corresponding text file have been updated and moved to the completed folder.' })
+
+        }
 });
 
 export default router;
