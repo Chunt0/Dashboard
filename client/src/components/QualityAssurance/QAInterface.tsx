@@ -62,7 +62,8 @@ const QAInterface: React.FC = () => {
                                 },
                                 body: JSON.stringify({ folder, mediaFile, label, removeMedia }),
                         });
-
+                        const data = await response.json();
+                        console.log(data);
                         handleLoadSelection();
                 } catch (error) {
                         console.error('Error fetching data:', error);
