@@ -43,49 +43,53 @@ router.post('/load', (req: Request, res: Response): void => {
 });
 
 router.post('/load/:folderId/:mediaId', (req: Request, res: Response): void => {
-        const { folderId, mediaId } = req.params;
-        console.log(folderId);
-        console.log(mediaId);
-        const mediaFilePath = path.join(datasetsDir, folderId, mediaId);
-        if (!mediaFilePath || !fs.existsSync(mediaFilePath)) {
-                res.status(400).send('Media Not Found');
-        }
-        let contentType = ''
-        if (mediaId.endsWith('.mp4')) {
-                contentType = 'video/mp4';
-        } else {
-                contentType = 'image/png';
-        }
-        const stat = fs.statSync(mediaFilePath)
-        const fileSize = stat.size;
-        const range = req.headers.range;
-        if (range) {
-                const parts = range.replace(/bytes=/, '').split('-');
-                const start = parseInt(parts[0], 10);
-                const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const { folderId, mediaId } = req.params;
+    const mediaFilePath = path.join(datasetsDir, folderId, mediaId);
 
-                if (start >= fileSize || end >= fileSize) {
-                        res.status(416).send('Requested Range Not Satisfiable');
-                        return;
-                }
+    if (!fs.existsSync(mediaFilePath)) {
+        res.status(404).send('Media Not Found');
+        return;
+    }
 
-                const chunkSize = end - start + 1;
-                const file = fs.createReadStream(mediaFilePath, { start, end });
-                res.writeHead(206, {
-                        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-                        'Accept-Ranges': 'bytes',
-                        'Content-Length': chunkSize,
-                        'Content-Type': contentType,
+    // Determine content type
+    let contentType = '';
+    if (mediaId.endsWith('.mp4')) {
+        contentType = 'video/mp4';
+    } else {
+        contentType = 'image/png';
+    }
 
-                });
-                file.pipe(res);
-        } else {
-                res.writeHead(206, {
-                        'Content-Length': fileSize,
-                        'Content-Type': contentType,
-                });
-                fs.createReadStream(mediaFilePath).pipe(res);
+    const stat = fs.statSync(mediaFilePath);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+
+    if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+        if (start >= fileSize || end >= fileSize) {
+            res.status(416).send('Requested Range Not Satisfiable');
+            return;
         }
+
+        const chunksize = end - start + 1;
+        const stream = fs.createReadStream(mediaFilePath, { start, end });
+        res.writeHead(206, {
+            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': chunksize,
+            'Content-Type': contentType,
+        });
+        stream.pipe(res);
+    } else {
+        // Send whole file
+        res.writeHead(200, {
+            'Content-Length': fileSize,
+            'Content-Type': contentType,
+        });
+        fs.createReadStream(mediaFilePath).pipe(res);
+    }
 });
 
 router.post('/upload', (req: Request, res: Response): void => {
