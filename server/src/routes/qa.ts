@@ -1,7 +1,7 @@
 import fs from 'fs';
+import mime from 'mime-types';
 import path from 'path';
 import { Router, Request, Response } from 'express';
-import { text } from 'stream/consumers';
 
 const router = Router();
 const datasetsDir = path.join(__dirname, '..', '..', '..', 'datasets'); // Define dataset directory
@@ -42,57 +42,69 @@ router.post('/load', (req: Request, res: Response): void => {
 
 });
 
-router.post('/load/:folderId/:mediaId', (req: Request, res: Response): void => {
-    const { folderId, mediaId } = req.params;
-    const mediaFilePath = path.join(datasetsDir, folderId, mediaId);
-
-    if (!fs.existsSync(mediaFilePath)) {
-        res.status(404).send('Media Not Found');
-        return;
-    }
-
-    // Determine content type
-    let contentType = '';
-    if (mediaId.endsWith('.mp4')) {
-        contentType = 'video/mp4';
-    } else {
-        contentType = 'image/png';
-    }
-
-    const stat = fs.statSync(mediaFilePath);
-    const fileSize = stat.size;
-    const range = req.headers.range;
-
-    if (range) {
-        const parts = range.replace(/bytes=/, '').split('-');
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-
-        if (start >= fileSize || end >= fileSize) {
-            res.status(416).send('Requested Range Not Satisfiable');
-            return;
+router.get('/media/:folderId/:mediaId', async (req: Request, res: Response): Promise<void> => {
+        const { folderId, mediaId } = req.params;
+        const mediaFilePath = path.normalize(path.join(datasetsDir, folderId, mediaId));
+        if (!mediaFilePath.startsWith(path.resolve(datasetsDir))) {
+                res.status(403).send('Forbidden');
+                return;
+        }
+        if (!fs.existsSync(mediaFilePath)) {
+                res.status(404).send('Media Not Found');
+                return;
         }
 
-        const chunksize = end - start + 1;
-        const stream = fs.createReadStream(mediaFilePath, { start, end });
-        res.writeHead(206, {
-            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunksize,
-            'Content-Type': contentType,
-        });
-        stream.pipe(res);
-    } else {
-        // Send whole file
-        res.writeHead(200, {
-            'Content-Length': fileSize,
-            'Content-Type': contentType,
-        });
-        fs.createReadStream(mediaFilePath).pipe(res);
-    }
+        let stat;
+        try {
+                stat = await fs.promises.stat(mediaFilePath);
+        } catch (err) {
+                res.status(404).send('Media Not Found');
+                return;
+        }
+
+
+        // Determine content type
+        let contentType = '';
+        if (mediaId.endsWith('.mp4')) {
+                contentType = 'video/mp4';
+        } else {
+                contentType = 'image/png';
+        }
+
+        const fileSize = stat.size;
+        const mimeType = mime.lookup(mediaId) || 'application/octet-stream';
+        console.log(mimeType);
+        const rangeHeader = req.headers.range;
+
+        if (rangeHeader) {
+                const parts = rangeHeader.replace(/bytes=/, '').split('-');
+                const start = parseInt(parts[0], 10);
+                const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 1 * 1024 * 1024 - 1, fileSize - 1);
+
+                if (start >= fileSize || end >= fileSize || start > end) {
+                        res.status(416).send('Requested Range Not Satisfiable');
+                        return;
+                }
+
+                const chunksize = end - start + 1;
+                res.status(206)
+                res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+                res.setHeader('Accept-Ranges', 'bytes');
+                res.setHeader('Content-Length', chunksize);
+                res.setHeader('Content-Type', mimeType);
+                res.setHeader('Cacher-Control', 'public, max-age=86400');
+                const stream = fs.createReadStream(mediaFilePath, { start, end });
+                stream.pipe(res);
+        } else {
+                res.status(200)
+                res.setHeader('Content-Length', fileSize);
+                res.setHeader('Content-Type', contentType);
+                res.setHeader('Cacher-Control', 'public, max-age=86400');
+                fs.createReadStream(mediaFilePath).pipe(res);
+        }
 });
 
-router.post('/upload', (req: Request, res: Response): void => {
+router.post('/submit', (req: Request, res: Response): void => {
         const { folder, mediaFile, label, removeMedia } = req.body;
         // construct current media path
         const currentMediaPath = path.join(datasetsDir, folder, mediaFile);
