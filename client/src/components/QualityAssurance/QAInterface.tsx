@@ -92,12 +92,12 @@ const QAInterface: React.FC = () => {
 
         return (
                 <>
-                        <div className="p-6 bg-white rounded-lg flex space-y-4">
-                                <h4 className="animate-pulse text-xl font-bold mb-6 text-purple-800 shadow-lg p-2 rounded-lg bg-gradient-to-r from-green-400 to-purple-600 text-white">
+                        <div className="p-6 bg-gradient-to-r from-red-800 to-amber-800 flex">
+                                <h4 className="animate-pulse text-xl font-bold text-purple-800 shadow-lg p-2 rounded-lg bg-gradient-to-r from-green-400 to-purple-600 text-white">
                                         Select dataset for QA
                                 </h4>
                                 <select
-                                        className="p-2 border border-gray-300 rounded bg-gray-100 text-purple-600 font-bold mb-4"
+                                        className="p-2 m-2 border border-gray-300 rounded bg-gray-100 text-purple-600 font-bold"
                                         onChange={handleFolderSelection}
                                 >
                                         <option value="">Select Folder</option>
@@ -114,7 +114,7 @@ const QAInterface: React.FC = () => {
                                         <h2 className="animate-bounce">Load Dataset</h2>
                                 </button>
                         </div>
-                        <div className="flex mt-4 space-y-4 items-center">
+                        <div className="flex bg-gradient-to-r from-red-800 to-amber-800 space-y-40 items-center">
                                 <div className="flex flex-col items-center">
                                         <textarea
                                                 ref={textareaRef}
@@ -122,14 +122,14 @@ const QAInterface: React.FC = () => {
                                                 value={label}
                                                 onChange={(e) => setLabel(e.target.value)}
                                                 placeholder="Label"
-                                                className="p-2 border border-gray-300 rounded w-200 h-24 resize-none" // Multi-line box with fixed size
+                                                className="p-2 m-5 border bg-white border-gray-300 rounded w-200 h-24 resize-none font-bold px-4" // Multi-line box with fixed size
                                         ></textarea>
-                                        <div className="flex items-center space-x-2">
-                                                <h2> Remove? </h2>
+                                        <div className="flex items-center space-x-2 text-xl">
+                                                <h1 className='font-extrabold'> Remove? </h1>
                                                 <input
                                                         type="checkbox"
                                                         id="removeCheckbox"
-                                                        className="form-checkbox"
+                                                        className="form-checkbox m-5"
                                                         checked={removeMedia}
                                                         onChange={handleCheckboxChange}
                                                 />
@@ -137,19 +137,19 @@ const QAInterface: React.FC = () => {
                                         <button
                                                 ref={buttonRef}
                                                 onClick={handleSubmit}
-                                                className="w-[1280px] px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition"
+                                                className="w-[600px] px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition"
                                         >
                                                 <h2>Next</h2>
                                         </button>
                                 </div>
-                                <div>
+                                <div className="m-10">
                                         {mediaSrc && mediaType === 'video' && (
                                                 <video controls width='1280' key={mediaSrc}>
                                                         <source src={mediaSrc} type="video/mp4" />
                                                 </video>
                                         )}
                                         {mediaSrc && mediaType === 'image' && (
-                                                <img key={mediaSrc} src={mediaSrc} alt="Loaded media" width="1280" />
+                                                <img key={mediaSrc} src={mediaSrc} alt="Loaded media" width="800" />
                                         )}
                                 </div>
                         </div >
