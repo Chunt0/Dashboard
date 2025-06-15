@@ -26,15 +26,21 @@ async def prep_img(batch_name: str, img_dir: str = "./uploads/", output_root: st
 
         img = Image.open(inp_path)
         width, height = img.size
-        if width < height:
-            new_width = 1024
-            new_height = int((1024 / width) * height)
-        else:
-            new_height = 1024
-            new_width = int((1024 / height) * width)
-        img = img.resize((new_width, new_height))
         
-        # save the image to tgt path but ensuring that it is a png then encode the PIL image into base 64
+        if width < 512 or height < 512:
+            os.remove(inp_path)
+            return
+
+        if width < height:
+            if height > 1300:
+                new_height = 1248
+                new_width = int((1248 / height) * width)
+                img = img.resize((new_width, new_height))
+        else:
+            if width > 1300:
+                new_width = 1248
+                new_height = int((1248 / width) * height)
+                img = img.resize((new_width, new_height))
         img.save(tgt_path, format="PNG")  # Save as PNG
         os.remove(inp_path)
 
