@@ -13,8 +13,8 @@ const QAInterface: React.FC = () => {
         const [label, setLabel] = useState<string>('');
         const [folders, setFolders] = useState<string[]>([]);
         const [removeMedia, setRemoveMedia] = useState<boolean>(false);
-        const textareaRef = useRef(null);
-        const buttonRef = useRef(null);
+        const textareaRef = useRef<HTMLTextAreaElement>(null);
+        const buttonRef = useRef<HTMLButtonElement>(null);
 
         useEffect(() => {
                 const fetchFolders = async () => {
@@ -26,7 +26,7 @@ const QAInterface: React.FC = () => {
         }, []);
 
 
-        const handleKeyDown = (e: React.ChangeEvent<HTMLButtonElement>) => {
+        const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                 if (e.key === 'Enter') {
                         e.preventDefault();
                         if (buttonRef.current) {

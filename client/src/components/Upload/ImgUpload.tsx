@@ -1,4 +1,5 @@
-import React, { useState, DragEvent } from 'react';
+import React, { useState } from 'react';
+import type { DragEvent } from 'react';
 
 const CHUNK_SIZE = 1024 * 1024;
 const UPLOAD_IMAGES_ENDPOINT = import.meta.env.VITE_UPLOAD_IMAGES_ENDPOINT;
@@ -58,22 +59,20 @@ const Image: React.FC = () => {
                 return Math.random().toString(36).substr(2, 9);
         }
 
-        // Handle drag over
         const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
                 e.preventDefault();
                 e.stopPropagation();
         };
 
-        // Handle drop
         const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
                 e.preventDefault();
                 e.stopPropagation();
 
-                if (isLocked) return; // Prevent dropping if locked
+                if (isLocked) return;
 
                 const items = e.dataTransfer.items;
 
-                const filePromises: Promise<File>[] = [];
+                const filePromises: Promise<File[]>[] = [];
 
                 for (let i = 0; i < items.length; i++) {
                         const item = items[i];

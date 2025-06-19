@@ -6,6 +6,7 @@ const TRAIN_FLUX_MODEL_ENDPOINT = import.meta.env.VITE_TRAIN_FLUX_MODEL_ENDPOINT
 
 const TrainFlux: React.FC = () => {
         // State for selected dataset
+        const [logMessage, setLogMessage] = useState<string>('');
         const [dataset, setDataset] = useState('');
         const [datasets, setDatasets] = useState<string[]>([]);
 
@@ -32,7 +33,7 @@ const TrainFlux: React.FC = () => {
                                 body: JSON.stringify(({ dataset })),
                         });
                         const data = await response.json();
-                        console.log(data);
+                        setLogMessage(data.status);
                 } catch (error) {
                         console.error('Error fetching data:', error);
                 }
@@ -65,6 +66,8 @@ const TrainFlux: React.FC = () => {
                                 >
                                         Train!
                                 </button>
+                                <br />
+                                <p className="text-4xl font-extrabold text-white mb-6">{logMessage}</p>
                         </div>
                 </div>
         );

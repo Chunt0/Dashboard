@@ -43,7 +43,7 @@ router.get('/folders/', async (req: Request, res: Response): Promise<void> => {
 router.post('/sdxl', (req: Request, res: Response): void => {
         const { dataset } = req.body;
         if (dataset === '') {
-                res.status(400).send(`request body:${JSON.stringify(req.body)}`);
+                res.status(400).send({ status: 'You must select a dataset!' });
                 return;
         }
         res.send({ status: 'training sdxl' });
@@ -53,7 +53,7 @@ router.post('/sdxl', (req: Request, res: Response): void => {
 router.post('/flux', (req: Request, res: Response): void => {
         const { dataset } = req.body;
         if (dataset === '') {
-                res.status(400).send(`request body:${JSON.stringify(req.body)}`);
+                res.status(400).send({ status: 'You must select a dataset!' });
                 return;
         }
         res.send({ status: 'training flux' });
@@ -63,7 +63,7 @@ router.post('/flux', (req: Request, res: Response): void => {
 router.post('/wan', (req: Request, res: Response): void => {
         const { dataset } = req.body;
         if (dataset === '') {
-                res.status(400).send(`request body:${JSON.stringify(req.body)}`);
+                res.status(400).send({ status: 'You must select a dataset!' });
                 return;
         }
         res.send({ status: 'training wan2.1' });
