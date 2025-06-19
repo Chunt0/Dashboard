@@ -5,58 +5,68 @@ import { Router, Request, Response } from 'express';
 const router = Router()
 const datasetDir = path.join(__dirname, '..', '..', '..', 'datasets');
 
-// Get all directories in datasetDir and check if each contains only a 'completed' directory
-router.get('/folders/', (req: Request, res: Response): void => {
-        fs.readdir(datasetDir, { withFileTypes: true }, (err, files) => {
-                if (err) {
-                        return res.status(500).json({ error: 'Failed to read directory' });
+router.get('/folders/', async (req: Request, res: Response): Promise<void> => {
+        try {
+                // Get all directories in datasetDir
+                const files = await fs.promises.readdir(datasetDir, { withFileTypes: true });
+
+                // Filter directories and check for 'completed' subdirectory
+                const folders: string[] = [];
+
+                for (const file of files) {
+                        if (file.isDirectory()) {
+                                try {
+                                        const subFiles = await fs.promises.readdir(
+                                                path.join(datasetDir, file.name),
+                                                { withFileTypes: true }
+                                        );
+
+                                        // Only add if directory contains just 'completed' subdirectory
+                                        if (subFiles.length === 1 &&
+                                                subFiles[0].isDirectory() &&
+                                                subFiles[0].name === 'completed') {
+                                                folders.push(file.name);
+                                        }
+                                } catch (err) {
+                                        console.error(`Error reading subdirectory ${file.name}:`, err);
+                                }
+                        }
                 }
-                const validFolders: string[] = [];
-                // Filter only directories
-                const directories = files.filter(file => file.isDirectory());
-                // Iterate through each directory
-                directories.forEach(dir => {
-                        const dirPath = path.join(datasetDir, dir.name);
-                        // Read contents of each directory
-                        fs.readdir(dirPath, { withFileTypes: true }, (err, subFiles) => {
-                                if (err) {
-                                        // Skip on error
-                                        return;
-                                }
-                                // Check if only 'completed' directory exists
-                                const subDirs = subFiles.filter(subFile => subFile.isDirectory()).map(subDir => subDir.name);
-                                if (subDirs.length === 1 && subDirs[0] === 'completed') {
-                                        validFolders.push(dir.name);
-                                }
-                        });
-                });
-                // Wait for all async checks to complete before responding
-                // Since fs.readdir is asynchronous, use Promise.all
-                const checkDirectories = directories.map(dir => {
-                        const dirPath = path.join(datasetDir, dir.name);
-                        return new Promise<void>((resolve) => {
-                                fs.readdir(dirPath, { withFileTypes: true }, (err, subFiles) => {
-                                        if (err) {
-                                                resolve();
-                                                return;
-                                        }
-                                        const subDirs = subFiles.filter(subFile => subFile.isDirectory()).map(subDir => subDir.name);
-                                        if (subDirs.length === 1 && subDirs[0] === 'completed') {
-                                                validFolders.push(dir.name);
-                                        }
-                                        resolve();
-                                });
-                        });
-                });
-                Promise.all(checkDirectories).then(() => {
-                        res.json(validFolders);
-                });
-        });
+
+                res.json(folders);
+        } catch (err) {
+                res.status(500).json({ error: 'Failed to read directory' });
+        }
 });
 
-router.post('/train-sdxl', (req: Request, res: Response): void => {
-        const { folder } = req.body;
-        if (folder === '') {
-                return res.status(400).send(`request body:${req.body}`) as unknown as void;
+// Send response with message "training sdxl" after validation
+router.post('/sdxl', (req: Request, res: Response): void => {
+        const { dataset } = req.body;
+        if (dataset === '') {
+                res.status(400).send(`request body:${JSON.stringify(req.body)}`);
+                return;
         }
-})
+        res.send({ status: 'training sdxl' });
+});
+
+// Send response with message "training sdxl" after validation
+router.post('/flux', (req: Request, res: Response): void => {
+        const { dataset } = req.body;
+        if (dataset === '') {
+                res.status(400).send(`request body:${JSON.stringify(req.body)}`);
+                return;
+        }
+        res.send({ status: 'training flux' });
+});
+
+// Send response with message "training sdxl" after validation
+router.post('/wan', (req: Request, res: Response): void => {
+        const { dataset } = req.body;
+        if (dataset === '') {
+                res.status(400).send(`request body:${JSON.stringify(req.body)}`);
+                return;
+        }
+        res.send({ status: 'training wan2.1' });
+});
+
+export default router;

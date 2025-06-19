@@ -1,11 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
+const GET_COMPLETED_DATASETS_ENDPOINT = import.meta.env.VITE_GET_COMPLETED_DATASETS_ENDPOINT;
+
+const TRAIN_WAN_MODEL_ENDPOINT = import.meta.env.VITE_TRAIN_WAN_MODEL_ENDPOINT;
 
 const TrainWAN: React.FC = () => {
         // State for selected dataset
         const [dataset, setDataset] = useState('');
+        const [datasets, setDatasets] = useState<string[]>([]);
 
-        // List of datasets for selection
-        const datasets = ['Dataset 1', 'Dataset 2', 'Dataset 3'];
+        useEffect(() => {
+                const fetchDatasets = async () => {
+                        const response = await fetch(GET_COMPLETED_DATASETS_ENDPOINT);
+                        const data = await response.json();
+                        setDatasets(data);
+                };
+                fetchDatasets();
+        }, []);
+
+        const handleFolderSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
+                setDataset(e.target.value);
+        }
+
+        const handleTrainWANModel = async () => {
+                try {
+                        const response = await fetch(TRAIN_WAN_MODEL_ENDPOINT, {
+                                method: 'POST',
+                                headers: {
+                                        'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(({ dataset })),
+                        });
+                        const data = await response.json();
+                        console.log(data);
+                } catch (error) {
+                        console.error('Error fetching data:', error);
+                }
+        };
 
         return (
                 // Full page with colorful gradient background
@@ -20,7 +51,7 @@ const TrainWAN: React.FC = () => {
                                 <select
                                         className="w-full p-3 bg-white rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                                         value={dataset}
-                                        onChange={(e) => setDataset(e.target.value)}
+                                        onChange={handleFolderSelection}
                                 >
                                         <option value="" disabled>Select a dataset</option>
                                         {datasets.map((ds) => (
@@ -29,6 +60,7 @@ const TrainWAN: React.FC = () => {
                                 </select>
                                 {/* Train button */}
                                 <button
+                                        onClick={handleTrainWANModel}
                                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300"
                                 >
                                         Train!
@@ -39,3 +71,4 @@ const TrainWAN: React.FC = () => {
 };
 
 export default TrainWAN;
+
