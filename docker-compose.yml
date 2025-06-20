@@ -1,0 +1,8 @@
+name: dashboard
+services:
+  dashboard:
+    ports:
+      - 3003:3003
+    volumes:
+      - ./datasets:/usr/src/app/datasets
+    image: dashboard

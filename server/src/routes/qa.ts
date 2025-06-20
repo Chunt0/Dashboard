@@ -4,7 +4,7 @@ import path from 'path';
 import { Router, Request, Response } from 'express';
 
 const router = Router();
-const datasetsDir = path.join(__dirname, '..', '..', '..', 'datasets'); // Define dataset directory
+const datasetsDir = process.env.DATA_DIR || path.resolve(__dirname, '../../../datasets'); // Define dataset directory
 
 // Get the folder names contained in datasetDir
 router.get('/folders', (req: Request, res: Response): void => {
@@ -73,7 +73,6 @@ router.get('/media/:folderId/:mediaId', async (req: Request, res: Response): Pro
 
         const fileSize = stat.size;
         const mimeType = mime.lookup(mediaId) || 'application/octet-stream';
-        console.log(mimeType);
         const rangeHeader = req.headers.range;
 
         if (rangeHeader) {
@@ -123,8 +122,6 @@ router.post('/submit', (req: Request, res: Response): void => {
                 fs.writeFile(destTextPath, label, (err) => {
                         if (err) {
                                 console.error('Error writing file:', err);
-                        } else {
-                                console.log('File saved successfully at', destTextPath);
                         }
                 });
                 fs.rmSync(currentMediaPath);

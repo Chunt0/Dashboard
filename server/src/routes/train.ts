@@ -3,9 +3,9 @@ import path from 'path';
 import { Router, Request, Response } from 'express';
 
 const router = Router()
-const datasetDir = path.join(__dirname, '..', '..', '..', 'datasets');
+const datasetDir = process.env.DATA_DIR || path.resolve(__dirname, '../../../datasets');
 
-router.get('/folders/', async (req: Request, res: Response): Promise<void> => {
+router.get('/datasets', async (req: Request, res: Response): Promise<void> => {
         try {
                 // Get all directories in datasetDir
                 const files = await fs.promises.readdir(datasetDir, { withFileTypes: true });

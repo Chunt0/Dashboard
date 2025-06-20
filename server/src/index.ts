@@ -15,9 +15,9 @@ app.use(cors());
 app.use('/api', routes);
 
 if (NODE_ENV === 'production') {
-        app.use(express.static(path.join(__dirname, '../../client/dist')));
+        app.use(express.static(path.join(__dirname, '../client/dist')));
         app.get('/', (req: Request, res: Response) => {
-                res.sendFile(path.resolve(__dirname, '../../client/dist/index.html'));
+                res.sendFile(path.resolve(__dirname, '../client/dist/index.html'));
         });
 }
 
