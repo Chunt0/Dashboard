@@ -5,10 +5,10 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  server: {
-    host: true,
-    port: 5173,
-    allowedHosts: ['dashboard.putty-ai.com']
-  }
+        plugins: [react(), tailwindcss()],
+        server: {
+                host: true,
+                port: 5173,
+                allowedHosts: ['dashboard-dev.putty-ai.com']
+        }
 })
