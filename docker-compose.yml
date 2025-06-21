@@ -6,3 +6,4 @@ services:
     volumes:
       - ./datasets:/usr/src/app/datasets
     image: dashboard
+    network_mode: "host"

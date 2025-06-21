@@ -9,7 +9,7 @@ import sharp from 'sharp';
 
 const router = Router();
 
-const uploadDir = process.env.UPLOAD_DIR || path.resolve(__dirname, '../../uploads');
+const uploadDir = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
 
 if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -36,7 +36,7 @@ interface UploadProgress {
 
 const uploadsMap: Record<string, UploadProgress> = {};
 
-async function prepImg(batchName: string, imgDir: string = './uploads', outputRoot: string = '../datasets'): Promise<string> {
+async function prepImg(batchName: string, imgDir: string = './uploads', outputRoot: string = '../datasets'): Promise<void> {
         const tgtDir = path.join(outputRoot, batchName);
         const completedDir = path.join(tgtDir, 'completed');
 
@@ -45,7 +45,6 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
 
         const files = fs.readdirSync(imgDir);
 
-        console.log(files);
         for (const file of files) {
                 const lowerFile = file.toLowerCase();
                 if (!lowerFile.endsWith('.png') && !lowerFile.endsWith('.jpg') && !lowerFile.endsWith('.jpeg') && !lowerFile.endsWith('.webp')) {
@@ -57,7 +56,6 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
                 const tgtPath = path.join(tgtDir, rootName);
 
                 const buffer = fs.readFileSync(inpPath);
-                console.log(inpPath);
                 try {
                         let image = sharp(buffer);
 
@@ -92,13 +90,10 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
                         const imgBase64 = buf.toString('base64');
 
                         await createImageLabel(imgBase64, tgtDir, tgtPath);
-                        console.log('createdImageLabel');
                 } catch (err) {
                         console.error('Error: ', err);
-                        return "err";
                 }
         }
-        return "ok";
 }
 
 async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: string) {
@@ -115,7 +110,6 @@ async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: stri
         };
 
         const url = 'http://localhost:11434/api/chat';
-        console.log(tgtPath);
 
         try {
                 const response = await fetch(url, {
@@ -125,7 +119,6 @@ async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: stri
                 });
 
                 const txtPath = tgtPath.replace('.png', '.txt');
-                console.log(txtPath);
 
                 if (response.ok) {
                         const resJson = await response.json();
@@ -174,12 +167,20 @@ router.post(
                         const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
                         const writeStream = fs.createWriteStream(tempPath);
 
+                        const streamFinished = new Promise<void>((resolve, reject) => {
+                                writeStream.on('finish', () => resolve());
+                                writeStream.on('error', reject);
+                        });
+
                         for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
                                 const chunkPath = path.join(folderPath, `chunk_${i}`);
                                 const data = fs.readFileSync(chunkPath);
                                 writeStream.write(data);
                         }
+
                         writeStream.end();
+
+                        await streamFinished;
                         fs.rmSync(folderPath, { recursive: true, force: true });
 
                         const resizeVideo = async (tempVidPath: string, finalVidPath: string): Promise<void> => {
@@ -269,12 +270,10 @@ router.post(
 
                 uploadsMap[fileId].receivedChunks++;
 
-                // Wrap the write operations in a Promise to ensure completion before calling prepImg
                 if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
                         const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
                         const writeStream = fs.createWriteStream(finalPath);
 
-                        // Create a promise to handle stream completion
                         const streamFinished = new Promise<void>((resolve, reject) => {
                                 writeStream.on('finish', () => resolve());
                                 writeStream.on('error', reject);
@@ -288,21 +287,13 @@ router.post(
 
                         writeStream.end();
 
-                        // Remove chunk folder after stream ends
                         await streamFinished;
                         fs.rmSync(folderPath, { recursive: true, force: true });
 
-                        // Call prepImg after the write stream has finished
-                        const val = await prepImg(batchName);
+                        await prepImg(batchName);
 
-                        // Handle response based on prepImg result
-                        if (val === "ok") {
-                                delete uploadsMap[fileId];
-                                res.json({ message: `File ${fileName} labeled` });
-                        } else {
-                                delete uploadsMap[fileId];
-                                res.json({ message: `${fileName} failed because of: ${val}` });
-                        }
+                        delete uploadsMap[fileId];
+                        res.json({ message: `File ${fileName} labeled` });
                 } else {
                         res.json({
                                 message: `Chunk ${chunkIndex} received`,
