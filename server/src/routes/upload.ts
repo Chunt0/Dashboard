@@ -36,7 +36,7 @@ interface UploadProgress {
 
 const uploadsMap: Record<string, UploadProgress> = {};
 
-async function prepImg(batchName: string, imgDir: string = './uploads', outputRoot: string = '../datasets') {
+async function prepImg(batchName: string, imgDir: string = './uploads', outputRoot: string = '../datasets'): Promise<string> {
         const tgtDir = path.join(outputRoot, batchName);
         const completedDir = path.join(tgtDir, 'completed');
 
@@ -45,6 +45,7 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
 
         const files = fs.readdirSync(imgDir);
 
+        console.log(files);
         for (const file of files) {
                 const lowerFile = file.toLowerCase();
                 if (!lowerFile.endsWith('.png') && !lowerFile.endsWith('.jpg') && !lowerFile.endsWith('.jpeg') && !lowerFile.endsWith('.webp')) {
@@ -57,8 +58,6 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
 
                 const buffer = fs.readFileSync(inpPath);
                 console.log(inpPath);
-                console.log('Buffer length:', buffer.length);
-                console.log('Buffer type:', Buffer.isBuffer(buffer));
                 try {
                         let image = sharp(buffer);
 
@@ -93,12 +92,13 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
                         const imgBase64 = buf.toString('base64');
 
                         await createImageLabel(imgBase64, tgtDir, tgtPath);
-                        return "ok";
+                        console.log('createdImageLabel');
                 } catch (err) {
                         console.error('Error: ', err);
-                        return err;
+                        return "err";
                 }
         }
+        return "ok";
 }
 
 async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: string) {
@@ -135,7 +135,7 @@ async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: stri
                         await fs.promises.writeFile(txtPath, '', 'utf8');
                 }
         } catch (err) {
-                console.error('Ollama API request errokjr:', err);
+                console.error('Ollama API request error:', err);
         }
 }
 
@@ -269,28 +269,39 @@ router.post(
 
                 uploadsMap[fileId].receivedChunks++;
 
+                // Wrap the write operations in a Promise to ensure completion before calling prepImg
                 if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
                         const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
                         const writeStream = fs.createWriteStream(finalPath);
+
+                        // Create a promise to handle stream completion
+                        const streamFinished = new Promise<void>((resolve, reject) => {
+                                writeStream.on('finish', () => resolve());
+                                writeStream.on('error', reject);
+                        });
 
                         for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
                                 const chunkPath = path.join(folderPath, `chunk_${i}`);
                                 const data = fs.readFileSync(chunkPath);
                                 writeStream.write(data);
                         }
+
                         writeStream.end();
+
+                        // Remove chunk folder after stream ends
+                        await streamFinished;
                         fs.rmSync(folderPath, { recursive: true, force: true });
 
+                        // Call prepImg after the write stream has finished
                         const val = await prepImg(batchName);
 
+                        // Handle response based on prepImg result
                         if (val === "ok") {
-                                const fileName = uploadsMap[fileId].fileName;
                                 delete uploadsMap[fileId];
                                 res.json({ message: `File ${fileName} labeled` });
                         } else {
-                                const fileName = uploadsMap[fileId].fileName;
                                 delete uploadsMap[fileId];
-                                res.status(500).json({ message: `${fileName} failed because of: ${val}` });
+                                res.json({ message: `${fileName} failed because of: ${val}` });
                         }
                 } else {
                         res.json({
