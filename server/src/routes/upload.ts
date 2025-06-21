@@ -40,10 +40,10 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
         const tgtDir = path.join(outputRoot, batchName);
         const completedDir = path.join(tgtDir, 'completed');
 
-        await fs.promises.mkdir(tgtDir, { recursive: true });
-        await fs.promises.mkdir(completedDir, { recursive: true });
+        fs.mkdirSync(tgtDir, { recursive: true });
+        fs.mkdirSync(completedDir, { recursive: true });
 
-        const files = await fs.promises.readdir(imgDir);
+        const files = fs.readdirSync(imgDir);
 
         for (const file of files) {
                 const lowerFile = file.toLowerCase();
@@ -55,7 +55,7 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
                 const inpPath = path.join(imgDir, file);
                 const tgtPath = path.join(tgtDir, rootName);
 
-                const buffer = await fs.promises.readFile(inpPath);
+                const buffer = fs.readFileSync(inpPath);
                 console.log(inpPath);
                 console.log('Buffer length:', buffer.length);
                 console.log('Buffer type:', Buffer.isBuffer(buffer));
@@ -68,7 +68,7 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
                         const height = metadata.height || 0;
 
                         if (width < 512 || height < 512) {
-                                await fs.promises.unlink(inpPath);
+                                fs.unlinkSync(inpPath);
                                 continue;
                         }
 
@@ -87,14 +87,16 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
                         }
 
                         await image.png().toFile(tgtPath);
-                        await fs.promises.unlink(inpPath);
+                        fs.unlinkSync(inpPath);
 
-                        const buf = await fs.promises.readFile(tgtPath);
+                        const buf = fs.readFileSync(tgtPath);
                         const imgBase64 = buf.toString('base64');
 
                         await createImageLabel(imgBase64, tgtDir, tgtPath);
+                        return "ok";
                 } catch (err) {
                         console.error('Error: ', err);
+                        return err;
                 }
         }
 }
@@ -133,7 +135,7 @@ async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: stri
                         await fs.promises.writeFile(txtPath, '', 'utf8');
                 }
         } catch (err) {
-                console.error('Ollama API request error:', err);
+                console.error('Ollama API request errokjr:', err);
         }
 }
 
@@ -277,41 +279,19 @@ router.post(
                                 writeStream.write(data);
                         }
                         writeStream.end();
-                        await fs.rmSync(folderPath, { recursive: true, force: true });
+                        fs.rmSync(folderPath, { recursive: true, force: true });
 
-                        /*
-                        const scriptPath = 'src/scripts/img_prep.py';
-                        const args = ['-dir', `${batchName}`];
-                        const pythonProcess = spawn('python', [scriptPath, ...args]);
+                        const val = await prepImg(batchName);
 
-                        let output = '';
-                        let errorOutput = '';
-
-                        pythonProcess.stdout.on('data', (data) => {
-                                output += data.toString();
-                        });
-
-                        pythonProcess.stderr.on('data', (data) => {
-                                errorOutput += data.toString();
-                        });
-
-
-                        pythonProcess.on('close', (code) => {
-                                if (code === 0) {
-                                        res.json({
-                                                message: `${output.trim()}`,
-                                        });
-                                } else {
-                                        res.status(500).json({
-                                                message: 'leaving blank for now!',
-                                                error: errorOutput.trim(),
-                                        });
-                                }
-                        });
-                        */
-                        await prepImg(batchName);
-                        res.json({ message: `File ${uploadsMap[fileId].fileName} labeled` });
-                        delete uploadsMap[fileId];
+                        if (val === "ok") {
+                                const fileName = uploadsMap[fileId].fileName;
+                                delete uploadsMap[fileId];
+                                res.json({ message: `File ${fileName} labeled` });
+                        } else {
+                                const fileName = uploadsMap[fileId].fileName;
+                                delete uploadsMap[fileId];
+                                res.status(500).json({ message: `${fileName} failed because of: ${val}` });
+                        }
                 } else {
                         res.json({
                                 message: `Chunk ${chunkIndex} received`,
@@ -320,4 +300,4 @@ router.post(
         }
 );
 
-export default router;
+export default router; 
