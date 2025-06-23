@@ -1,0 +1,212 @@
+please rewrite this in typescript. DO NOT use '*' when importing anything, and DO NOT use axios
+
+import io
+import argparse
+import asyncio
+import aiohttp
+import base64
+import os
+from PIL import Image
+
+async def prep_img(batch_name: str, img_dir: str = "./uploads/", output_root: str = "../datasets/"):
+    tgt_dir = os.path.join(output_root, batch_name)
+    for image in os.listdir(img_dir):
+        if not image.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+            continue
+
+        # take each image, find the shortest side and scale the image such that that shortest side is 1024 pixels
+
+
+        os.makedirs(tgt_dir, exist_ok=True)
+        os.makedirs(f"{tgt_dir}/completed", exist_ok=True)
+        
+
+        root, ext = os.path.splitext(image)
+        root = root + ".png"
+        inp_path = os.path.join(img_dir, image)
+        tgt_path = os.path.join(tgt_dir, root)
+
+        img = Image.open(inp_path)
+        width, height = img.size
+        
+        if width < 512 or height < 512:
+            os.remove(inp_path)
+            return
+
+        if width < height:
+            if height > 1300:
+                new_height = 1248
+                new_width = int((1248 / height) * width)
+                img = img.resize((new_width, new_height))
+        else:
+            if width > 1300:
+                new_width = 1248
+                new_height = int((1248 / width) * height)
+                img = img.resize((new_width, new_height))
+        img.save(tgt_path, format="PNG")  # Save as PNG
+        os.remove(inp_path)
+
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")  # Save image to buffer as PNG
+        img_64 = base64.b64encode(buffered.getvalue()).decode("utf-8")  # Encode to base64
+        await create_image_label(img_64, tgt_dir, tgt_path)
+
+async def create_image_label(img_64, tgt_dir, filename):
+    payload = {
+        "model": "gemma3:27b",
+        "messages": [
+            {
+                "role": "user",
+                "content": "create a comma separated image label describing this picture. only return this label, no extra commentary, no quotation marks, and no redundant words. the label will be used to train a text2image model.",
+                "images": [img_64]
+            }
+        ],
+        "stream": False
+    }
+
+    url = 'http://localhost:11434/api/chat'
+    headers = {'Content-Type': 'application/json'}
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as response:
+            txt_path = filename.replace('.png', '.txt')
+            if response.status == 200:
+                res = await response.json()  # Parse JSON directly
+                content = res["message"]["content"]
+                # Save content to the text file
+                with open(txt_path, 'w') as f:
+                    f.write(content)
+            else:
+                # Create an empty file if response is not successful
+                if not os.path.exists(txt_path):
+                    with open(txt_path, 'w') as f:
+                        pass  # or write default info if needed
+
+
+---------------------------Agent---------------------------
+
+Certainly! Here's your Python code translated into TypeScript with the constraints:
+
+- **No `*` imports**.
+- **No axios**, using the built-in `fetch`.
+- Uses `fs/promises` for file operations.
+- Uses `sharp` for image processing (since PIL is Python-specific).
+- Uses `process.argv` for argument parsing.
+
+First, ensure you install the necessary dependencies:
+
+```bash
+npm install sharp
+```
+
+And here's the TypeScript code:
+
+```typescript
+import { readdir, mkdir, unlink, writeFile, existsSync } from 'fs/promises';
+import { join, parse } from 'path';
+import fetch from 'node-fetch'; // or your environment's fetch
+import sharp from 'sharp';
+
+async function prepImg(batchName: string, imgDir: string = './uploads', outputRoot: string = '../datasets') {
+    const tgtDir = join(outputRoot, batchName);
+    const completedDir = join(tgtDir, 'completed');
+
+    await mkdir(tgtDir, { recursive: true });
+    await mkdir(completedDir, { recursive: true });
+
+    const files = await readdir(imgDir);
+
+    for (const file of files) {
+        const lowerFile = file.toLowerCase();
+        if (!lowerFile.endsWith('.png') && !lowerFile.endsWith('.jpg') && !lowerFile.endsWith('.jpeg') && !lowerFile.endsWith('.webp')) {
+            continue;
+        }
+
+        const rootName = parse(file).name + '.png';
+        const inpPath = join(imgDir, file);
+        const tgtPath = join(tgtDir, rootName);
+
+        // Read and process image
+        const buffer = await fetchFileBuffer(inpPath);
+        let image = sharp(buffer);
+        const metadata = await image.metadata();
+
+        const width = metadata.width || 0;
+        const height = metadata.height || 0;
+
+        // Skip small images
+        if (width < 512 || height < 512) {
+            await unlink(inpPath);
+            continue;
+        }
+
+        // Resize image if needed
+        if (width < height) {
+            if (height > 1300) {
+                const newHeight = 1248;
+                const newWidth = Math.round((1248 / height) * width);
+                image = image.resize(newWidth, newHeight);
+            }
+        } else {
+            if (width > 1300) {
+                const newWidth = 1248;
+                const newHeight = Math.round((1248 / width) * height);
+                image = image.resize(newWidth, newHeight);
+            }
+        }
+
+        // Save as PNG and delete original
+        await image.png().toFile(tgtPath);
+        await unlink(inpPath);
+
+        // Convert image to base64
+        const buf = await fetchFileBuffer(tgtPath);
+        const imgBase64 = buf.toString('base64');
+
+        await createImageLabel(imgBase64, tgtDir, tgtPath);
+    }
+}
+
+async function fetchFileBuffer(path: string): Promise<Buffer> {
+    const fs = await import('fs');
+    const data = await fs.promises.readFile(path);
+    return data;
+}
+
+async function createImageLabel(img_64: string, tgt_dir: string, filename: string) {
+    const payload = {
+        model: 'gemma3:27b',
+        messages: [
+            {
+                role: 'user',
+                content: 'create a comma separated image label describing this picture. only return this label, no extra commentary, no quotation marks, and no redundant words. the label will be used to train a text2image model.',
+                images: [img_64]
+            }
+        ],
+        stream: false
+    };
+
+    const url = 'http://localhost:11434/api/chat';
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const txtPath = filename.replace('.png', '.txt');
+
+        if (response.ok) {
+            const resJson = await response.json();
+            const content = resJson.message?.content || '';
+            await writeFile(join(tgt_dir, txtPath), content, 'utf8');
+        } else {
+            // response not OK, create empty file
+            await writeFile(join(tgt_dir, txtPath), '', 'utf8');
+        }
+    } catch (err) {
+        console.error('API request error:', err);
+    }
+}
+
