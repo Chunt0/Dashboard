@@ -33,9 +33,9 @@ server/dist/
 server/build/
 server/.env
 server/.env.local
-server/.env.development.local
+server/.env.development
 server/.env.test.local
-server/.env.production.local
+server/.env.production
 server/uploads/
 server/logs/
 

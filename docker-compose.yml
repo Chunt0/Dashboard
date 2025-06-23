@@ -1,8 +1,15 @@
-name: dashboard
 services:
-  dashboard:
+  dashboard-backend:
+    # Use host network mode for backend if needed
+    network_mode: host
     ports:
       - 3003:3003
     volumes:
       - ./datasets:/usr/src/app/datasets
+      - ./server/uploads/:/usr/src/app/uploads
+    image: dashboard-backend
+
+  dashboard:
+    ports:
+      - 5173:5173
     image: dashboard

@@ -7,9 +7,10 @@ import fs from 'fs';
 import sharp from 'sharp';
 
 
+const NODE_ENV = process.env.NODE_ENV || 'development';
 const router = Router();
 
-const uploadDir = process.env.UPLOAD_DIR || path.resolve(__dirname, '../../uploads');
+const uploadDir = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
 
 if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -36,7 +37,9 @@ interface UploadProgress {
 
 const uploadsMap: Record<string, UploadProgress> = {};
 
-async function prepImg(batchName: string, imgDir: string = './uploads', outputRoot: string = '../datasets') {
+async function prepImg(batchName: string): Promise<void> {
+        const imgDir = NODE_ENV === "production" ? "/usr/src/app/uploads" : "./uploads";
+        const outputRoot = NODE_ENV === "production" ? "/usr/src/app/datasets" : "../datasets";
         const tgtDir = path.join(outputRoot, batchName);
         const completedDir = path.join(tgtDir, 'completed');
 
@@ -56,9 +59,6 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
                 const tgtPath = path.join(tgtDir, rootName);
 
                 const buffer = fs.readFileSync(inpPath);
-                console.log(inpPath);
-                console.log('Buffer length:', buffer.length);
-                console.log('Buffer type:', Buffer.isBuffer(buffer));
                 try {
                         let image = sharp(buffer);
 
@@ -93,10 +93,8 @@ async function prepImg(batchName: string, imgDir: string = './uploads', outputRo
                         const imgBase64 = buf.toString('base64');
 
                         await createImageLabel(imgBase64, tgtDir, tgtPath);
-                        return "ok";
                 } catch (err) {
                         console.error('Error: ', err);
-                        return err;
                 }
         }
 }
@@ -114,8 +112,9 @@ async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: stri
                 stream: false
         };
 
+
         const url = 'http://localhost:11434/api/chat';
-        console.log(tgtPath);
+
 
         try {
                 const response = await fetch(url, {
@@ -125,7 +124,6 @@ async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: stri
                 });
 
                 const txtPath = tgtPath.replace('.png', '.txt');
-                console.log(txtPath);
 
                 if (response.ok) {
                         const resJson = await response.json();
@@ -135,7 +133,7 @@ async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: stri
                         await fs.promises.writeFile(txtPath, '', 'utf8');
                 }
         } catch (err) {
-                console.error('Ollama API request errokjr:', err);
+                console.error('Ollama API request error: ', err);
         }
 }
 
@@ -174,12 +172,20 @@ router.post(
                         const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
                         const writeStream = fs.createWriteStream(tempPath);
 
+                        const streamFinished = new Promise<void>((resolve, reject) => {
+                                writeStream.on('finish', () => resolve());
+                                writeStream.on('error', reject);
+                        });
+
                         for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
                                 const chunkPath = path.join(folderPath, `chunk_${i}`);
                                 const data = fs.readFileSync(chunkPath);
                                 writeStream.write(data);
                         }
+
                         writeStream.end();
+
+                        await streamFinished;
                         fs.rmSync(folderPath, { recursive: true, force: true });
 
                         const resizeVideo = async (tempVidPath: string, finalVidPath: string): Promise<void> => {
@@ -273,25 +279,26 @@ router.post(
                         const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
                         const writeStream = fs.createWriteStream(finalPath);
 
+                        const streamFinished = new Promise<void>((resolve, reject) => {
+                                writeStream.on('finish', () => resolve());
+                                writeStream.on('error', reject);
+                        });
+
                         for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
                                 const chunkPath = path.join(folderPath, `chunk_${i}`);
                                 const data = fs.readFileSync(chunkPath);
                                 writeStream.write(data);
                         }
+
                         writeStream.end();
+
+                        await streamFinished;
                         fs.rmSync(folderPath, { recursive: true, force: true });
 
-                        const val = await prepImg(batchName);
+                        await prepImg(batchName);
 
-                        if (val === "ok") {
-                                const fileName = uploadsMap[fileId].fileName;
-                                delete uploadsMap[fileId];
-                                res.json({ message: `File ${fileName} labeled` });
-                        } else {
-                                const fileName = uploadsMap[fileId].fileName;
-                                delete uploadsMap[fileId];
-                                res.status(500).json({ message: `${fileName} failed because of: ${val}` });
-                        }
+                        delete uploadsMap[fileId];
+                        res.json({ message: `File ${fileName} labeled` });
                 } else {
                         res.json({
                                 message: `Chunk ${chunkIndex} received`,
