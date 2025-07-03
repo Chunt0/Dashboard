@@ -1,6 +1,5 @@
 import { Router, Response, Request } from "express";
 import ffmpeg from 'fluent-ffmpeg';
-import { spawn } from 'child_process';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -36,6 +35,79 @@ interface UploadProgress {
 }
 
 const uploadsMap: Record<string, UploadProgress> = {};
+
+async function prepVid(videoPath: string, batchName: string): Promise<void> {
+        const outputRoot = NODE_ENV === "production" ? "/usr/src/app/datasets" : "../datasets";
+        const tgtDir = path.join(outputRoot, batchName);
+        const completedDir = path.join(tgtDir, 'completed');
+
+        fs.mkdirSync(tgtDir, { recursive: true });
+        fs.mkdirSync(completedDir, { recursive: true });
+
+        const videoFileName = path.parse(videoPath).name;
+
+        ffmpeg.ffprobe(videoPath, async (err, metadata) => {
+                if (err) {
+                        console.error('Error getting video metadata:', err);
+                        return;
+                }
+
+                const duration = metadata.format.duration || 0;
+                const clipDuration = 4;
+                let startTime = 0;
+                let clipIndex = 0;
+
+                while (startTime < duration) {
+                        const currentClipDuration = Math.min(clipDuration, duration - startTime);
+                        const clipFileName = `${videoFileName}_clip_${clipIndex}.mp4`;
+                        const clipPath = path.join(tgtDir, clipFileName);
+                        const thumbnailFileName = `${videoFileName}_clip_${clipIndex}.png`;
+                        const thumbnailPath = path.join(tgtDir, thumbnailFileName);
+
+                        await new Promise<void>((resolve, reject) => {
+                                ffmpeg(videoPath)
+                                        .setStartTime(startTime)
+                                        .setDuration(currentClipDuration)
+                                        .outputOptions('-vf', 'scale=-2:720')
+                                        .save(clipPath)
+                                        .on('end', () => {
+                                                console.log(`Clip ${clipIndex} created`);
+                                                resolve();
+                                        })
+                                        .on('error', (clipErr) => {
+                                                console.error(`Error creating clip ${clipIndex}:`, clipErr);
+                                                reject(clipErr);
+                                        });
+                        });
+
+                        await new Promise<void>((resolve, reject) => {
+                                ffmpeg(clipPath)
+                                        .screenshots({
+                                                timestamps: ['50%'],
+                                                filename: thumbnailFileName,
+                                                folder: tgtDir,
+                                        })
+                                        .on('end', () => {
+                                                console.log(`Thumbnail for clip ${clipIndex} created`);
+                                                resolve();
+                                        })
+                                        .on('error', (thumbErr) => {
+                                                console.error(`Error creating thumbnail for clip ${clipIndex}:`, thumbErr);
+                                                reject(thumbErr);
+                                        });
+                        });
+
+                        const buffer = fs.readFileSync(thumbnailPath);
+                        const imgBase64 = buffer.toString('base64');
+                        await createImageLabel(imgBase64, tgtDir, thumbnailPath);
+                        fs.unlinkSync(thumbnailPath);
+
+                        startTime += clipDuration;
+                        clipIndex++;
+                }
+                fs.unlinkSync(videoPath);
+        });
+}
 
 async function prepImg(batchName: string): Promise<void> {
         const imgDir = NODE_ENV === "production" ? "/usr/src/app/uploads" : "./uploads";
@@ -168,7 +240,7 @@ router.post(
                 uploadsMap[fileId].receivedChunks++;
 
                 if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
-                        const tempPath = path.join(__dirname, '..', '..', 'uploads', `temp_${fileName}`)
+                        const tempPath = path.join(__dirname, '..', '..', 'uploads', `${fileName}`)
                         const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
                         const writeStream = fs.createWriteStream(tempPath);
 
@@ -188,55 +260,10 @@ router.post(
                         await streamFinished;
                         fs.rmSync(folderPath, { recursive: true, force: true });
 
-                        const resizeVideo = async (tempVidPath: string, finalVidPath: string): Promise<void> => {
-                                await new Promise<void>((resolve, reject) => {
-                                        ffmpeg(tempVidPath)
-                                                .outputOptions('-vf', 'scale=-2:720') // Resize to 720px height, maintain aspect ratio
-                                                .save(finalVidPath) // Output video at the same path as input
-                                                .on('end', () => {
-                                                        console.log('Video resized successfully');
-                                                        resolve();
-                                                })
-                                                .on('error', (err) => {
-                                                        console.error('Error resizing video', err);
-                                                        reject(err);
-                                                });
-                                });
-                        };
-
-                        await resizeVideo(tempPath, finalPath);
-                        fs.rmSync(tempPath);
-
-
-                        const scriptPath = 'src/scripts/vid_prep.py';
-                        const args = ['-dir', `${batchName}`];
-                        const pythonProcess = spawn('python', [scriptPath, ...args]);
-
-                        let output = '';
-                        let errorOutput = '';
-
-                        pythonProcess.stdout.on('data', (data) => {
-                                output += data.toString();
-                        });
-
-                        pythonProcess.stderr.on('data', (data) => {
-                                errorOutput += data.toString();
-                        });
+                        await prepVid(finalPath, batchName);
 
                         delete uploadsMap[fileId];
-
-                        pythonProcess.on('close', (code) => {
-                                if (code === 0) {
-                                        res.json({
-                                                message: `${output.trim()}`,
-                                        });
-                                } else {
-                                        res.status(500).json({
-                                                message: 'leaving blank for now!',
-                                                error: errorOutput.trim(),
-                                        });
-                                }
-                        });
+                        res.json({ message: `File ${fileName} labeled` });
                 } else {
                         res.json({
                                 message: `Chunk ${chunkIndex} received`,
