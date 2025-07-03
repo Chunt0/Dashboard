@@ -1,8 +1,7 @@
 FROM nginx:alpine
 
-COPY dist/ /usr/share/nginx/html
-
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY client/dist/ /usr/share/nginx/html
+COPY client/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 5173
 

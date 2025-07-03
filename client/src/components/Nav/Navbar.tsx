@@ -30,7 +30,7 @@ function Navbar() {
           Upload
         </NavLink>
         <NavLink
-          to="/qA"
+          to="/qa"
           style={({ isActive }) => ({
             color: isActive ? "#fff" : "#aaa",
             marginRight: "2rem",
