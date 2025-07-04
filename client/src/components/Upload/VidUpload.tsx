@@ -50,7 +50,7 @@ const Video: React.FC = () => {
                         setUploadProgress(0);
                         //setFilesUploaded(true);
                         setBatchName('');
-                        setTimeout(() => { setIsLocked(false); }, 800);
+                        setIsLocked(false);
                 }
         };
 

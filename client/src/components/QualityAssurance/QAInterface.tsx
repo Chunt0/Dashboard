@@ -4,6 +4,7 @@ const GET_FOLDERS_ENDPOINT = import.meta.env.VITE_GET_FOLDERS_ENDPOINT;
 const LOAD_DATASET_ENDPOINT = import.meta.env.VITE_LOAD_DATASET_ENDPOINT;
 const SUBMIT_ENDPOINT = import.meta.env.VITE_SUBMIT_ENDPOINT;
 const MEDIA_ENDPOINT = import.meta.env.VITE_MEDIA_ENDPOINT;
+const COMPLETION_STATUS_ENDPOINT = import.meta.env.VITE_COMPLETION_STATUS_ENDPOINT;
 
 const QAInterface: React.FC = () => {
         const [mediaType, setMediaType] = useState<string>('');
@@ -13,6 +14,8 @@ const QAInterface: React.FC = () => {
         const [label, setLabel] = useState<string>('');
         const [folders, setFolders] = useState<string[]>([]);
         const [removeMedia, setRemoveMedia] = useState<boolean>(false);
+        const [allCompleted, setAllCompleted] = useState<boolean>(false);
+        const [remainingFiles, setRemainingFiles] = useState<number>(0);
         const textareaRef = useRef<HTMLTextAreaElement>(null);
         const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -35,8 +38,22 @@ const QAInterface: React.FC = () => {
                 }
         };
 
+        const checkCompletionStatus = async (folderName: string) => {
+                if (!folderName) return;
+                try {
+                        const response = await fetch(`${COMPLETION_STATUS_ENDPOINT}/${folderName}`);
+                        const data = await response.json();
+                        setAllCompleted(data.allCompleted);
+                        setRemainingFiles(data.remainingFiles);
+                } catch (error) {
+                        console.error('Error checking completion status:', error);
+                }
+        };
+
         const handleFolderSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
-                setFolder(e.target.value);
+                const selectedFolder = e.target.value;
+                setFolder(selectedFolder);
+                checkCompletionStatus(selectedFolder);
         };
 
         const handleLoadSelection = async () => {
@@ -79,6 +96,7 @@ const QAInterface: React.FC = () => {
                                 body: JSON.stringify({ folder, mediaFile, label, removeMedia }),
                         });
                         await response.json();
+                        checkCompletionStatus(folder);
                         handleLoadSelection();
                 } catch (error) {
                         console.error('Error fetching data:', error);
@@ -115,43 +133,64 @@ const QAInterface: React.FC = () => {
                                 </button>
                         </div>
                         <div className="flex bg-gradient-to-r from-red-800 to-amber-800 space-y-40 items-center">
-                                <div className="flex flex-col items-center">
-                                        <textarea
-                                                ref={textareaRef}
-                                                onKeyDown={handleKeyDown}
-                                                value={label}
-                                                onChange={(e) => setLabel(e.target.value)}
-                                                placeholder="Label"
-                                                className="p-2 m-5 border bg-white border-gray-300 rounded w-200 h-24 resize-none font-bold px-4" // Multi-line box with fixed size
-                                        ></textarea>
-                                        <div className="flex items-center space-x-2 text-xl">
-                                                <h1 className='font-extrabold'> Remove? </h1>
-                                                <input
-                                                        type="checkbox"
-                                                        id="removeCheckbox"
-                                                        className="form-checkbox m-5"
-                                                        checked={removeMedia}
-                                                        onChange={handleCheckboxChange}
-                                                />
+                                {allCompleted && (
+                                        <div className="flex flex-col items-center justify-center w-full">
+                                                <div className="text-center mb-4">
+                                                        <h2 className="text-2xl font-bold text-white animate-pulse">
+                                                                🎉 All files completed! 🎉
+                                                        </h2>
+                                                        <p className="text-white">Great work! All media files have been processed.</p>
+                                                </div>
                                         </div>
-                                        <button
-                                                ref={buttonRef}
-                                                onClick={handleSubmit}
-                                                className="w-[600px] px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition"
-                                        >
-                                                <h2>Next</h2>
-                                        </button>
-                                </div>
-                                <div className="m-10">
-                                        {mediaSrc && mediaType === 'video' && (
-                                                <video controls width='1280' key={mediaSrc}>
-                                                        <source src={mediaSrc} type="video/mp4" />
-                                                </video>
-                                        )}
-                                        {mediaSrc && mediaType === 'image' && (
-                                                <img key={mediaSrc} src={mediaSrc} alt="Loaded media" width="800" />
-                                        )}
-                                </div>
+                                )}
+                                {!allCompleted && (
+                                        <div className="flex flex-col items-center">
+                                                <textarea
+                                                        ref={textareaRef}
+                                                        onKeyDown={handleKeyDown}
+                                                        value={label}
+                                                        onChange={(e) => setLabel(e.target.value)}
+                                                        placeholder="Label"
+                                                        className="p-2 m-5 border bg-white border-gray-300 rounded w-200 h-24 resize-none font-bold px-4" // Multi-line box with fixed size
+                                                ></textarea>
+                                                <div className="flex items-center space-x-2 text-xl">
+                                                        <h1 className='font-extrabold'> Remove? </h1>
+                                                        <input
+                                                                type="checkbox"
+                                                                id="removeCheckbox"
+                                                                className="form-checkbox m-5"
+                                                                checked={removeMedia}
+                                                                onChange={handleCheckboxChange}
+                                                        />
+                                                </div>
+                                                <button
+                                                        ref={buttonRef}
+                                                        onClick={handleSubmit}
+                                                        className="w-[600px] px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition"
+                                                >
+                                                        <h2>Next</h2>
+                                                </button>
+                                                {remainingFiles > 0 && (
+                                                        <div className="mt-4 text-center">
+                                                                <p className="text-white font-bold">
+                                                                        {remainingFiles} file{remainingFiles !== 1 ? 's' : ''} remaining
+                                                                </p>
+                                                        </div>
+                                                )}
+                                        </div>
+                                )}
+                                {!allCompleted && (
+                                        <div className="m-10">
+                                                {mediaSrc && mediaType === 'video' && (
+                                                        <video controls width='1280' key={mediaSrc}>
+                                                                <source src={mediaSrc} type="video/mp4" />
+                                                        </video>
+                                                )}
+                                                {mediaSrc && mediaType === 'image' && (
+                                                        <img key={mediaSrc} src={mediaSrc} alt="Loaded media" width="800" />
+                                                )}
+                                        </div>
+                                )}
                         </div >
                 </>
         );

@@ -36,6 +36,17 @@ interface UploadProgress {
 
 const uploadsMap: Record<string, UploadProgress> = {};
 
+function ffprobePromise(videoPath: string): Promise<ffmpeg.FfprobeData> {
+        return new Promise((resolve, reject) => {
+                ffmpeg.ffprobe(videoPath, (err, data) => {
+                        if (err) {
+                                return reject(err);
+                        }
+                        return resolve(data);
+                });
+        });
+}
+
 async function prepVid(videoPath: string, batchName: string): Promise<void> {
         const outputRoot = NODE_ENV === "production" ? "/usr/src/app/datasets" : "../datasets";
         const tgtDir = path.join(outputRoot, batchName);
@@ -46,12 +57,8 @@ async function prepVid(videoPath: string, batchName: string): Promise<void> {
 
         const videoFileName = path.parse(videoPath).name;
 
-        ffmpeg.ffprobe(videoPath, async (err, metadata) => {
-                if (err) {
-                        console.error('Error getting video metadata:', err);
-                        return;
-                }
-
+        try {
+                const metadata = await ffprobePromise(videoPath);
                 const duration = metadata.format.duration || 0;
                 const clipDuration = 4;
                 let startTime = 0;
@@ -106,11 +113,12 @@ async function prepVid(videoPath: string, batchName: string): Promise<void> {
                         clipIndex++;
                 }
                 fs.unlinkSync(videoPath);
-        });
+        } catch (err) {
+                console.error('Error processing video:', err);
+        }
 }
 
-async function prepImg(batchName: string): Promise<void> {
-        const imgDir = NODE_ENV === "production" ? "/usr/src/app/uploads" : "./uploads";
+async function prepImg(imagePath: string, batchName: string): Promise<void> {
         const outputRoot = NODE_ENV === "production" ? "/usr/src/app/datasets" : "../datasets";
         const tgtDir = path.join(outputRoot, batchName);
         const completedDir = path.join(tgtDir, 'completed');
@@ -118,56 +126,53 @@ async function prepImg(batchName: string): Promise<void> {
         fs.mkdirSync(tgtDir, { recursive: true });
         fs.mkdirSync(completedDir, { recursive: true });
 
-        const files = fs.readdirSync(imgDir);
+        const file = path.basename(imagePath);
+        const lowerFile = file.toLowerCase();
 
-        for (const file of files) {
-                const lowerFile = file.toLowerCase();
-                if (!lowerFile.endsWith('.png') && !lowerFile.endsWith('.jpg') && !lowerFile.endsWith('.jpeg') && !lowerFile.endsWith('.webp')) {
-                        continue;
+        if (!lowerFile.endsWith('.png') && !lowerFile.endsWith('.jpg') && !lowerFile.endsWith('.jpeg') && !lowerFile.endsWith('.webp')) {
+                return;
+        }
+
+        const rootName = path.parse(file).name + '.png';
+        const tgtPath = path.join(tgtDir, rootName);
+
+        const buffer = fs.readFileSync(imagePath);
+        try {
+                let image = sharp(buffer);
+
+                const metadata = await image.metadata();
+
+                const width = metadata.width || 0;
+                const height = metadata.height || 0;
+
+                if (width < 512 || height < 512) {
+                        fs.unlinkSync(imagePath);
+                        return;
                 }
 
-                const rootName = path.parse(file).name + '.png';
-                const inpPath = path.join(imgDir, file);
-                const tgtPath = path.join(tgtDir, rootName);
-
-                const buffer = fs.readFileSync(inpPath);
-                try {
-                        let image = sharp(buffer);
-
-                        const metadata = await image.metadata();
-
-                        const width = metadata.width || 0;
-                        const height = metadata.height || 0;
-
-                        if (width < 512 || height < 512) {
-                                fs.unlinkSync(inpPath);
-                                continue;
+                if (width < height) {
+                        if (height > 1300) {
+                                const newHeight = 1248;
+                                const newWidth = Math.round((1248 / height) * width);
+                                image = image.resize(newWidth, newHeight);
                         }
-
-                        if (width < height) {
-                                if (height > 1300) {
-                                        const newHeight = 1248;
-                                        const newWidth = Math.round((1248 / height) * width);
-                                        image = image.resize(newWidth, newHeight);
-                                }
-                        } else {
-                                if (width > 1300) {
-                                        const newWidth = 1248;
-                                        const newHeight = Math.round((1248 / width) * height);
-                                        image = image.resize(newWidth, newHeight);
-                                }
+                } else {
+                        if (width > 1300) {
+                                const newWidth = 1248;
+                                const newHeight = Math.round((1248 / width) * height);
+                                image = image.resize(newWidth, newHeight);
                         }
-
-                        await image.png().toFile(tgtPath);
-                        fs.unlinkSync(inpPath);
-
-                        const buf = fs.readFileSync(tgtPath);
-                        const imgBase64 = buf.toString('base64');
-
-                        await createImageLabel(imgBase64, tgtDir, tgtPath);
-                } catch (err) {
-                        console.error('Error: ', err);
                 }
+
+                await image.png().toFile(tgtPath);
+                fs.unlinkSync(imagePath);
+
+                const buf = fs.readFileSync(tgtPath);
+                const imgBase64 = buf.toString('base64');
+
+                await createImageLabel(imgBase64, tgtDir, tgtPath);
+        } catch (err) {
+                console.error('Error: ', err);
         }
 }
 
@@ -322,7 +327,7 @@ router.post(
                         await streamFinished;
                         fs.rmSync(folderPath, { recursive: true, force: true });
 
-                        await prepImg(batchName);
+                        await prepImg(finalPath, batchName);
 
                         delete uploadsMap[fileId];
                         res.json({ message: `File ${fileName} labeled` });

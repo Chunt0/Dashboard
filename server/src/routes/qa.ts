@@ -131,5 +131,34 @@ router.post('/submit', (req: Request, res: Response): void => {
         }
 });
 
+router.get('/completion-status/:folder', (req: Request, res: Response): void => {
+        const { folder } = req.params;
+        const dataDir = path.join(datasetsDir, folder);
+        const completedDir = path.join(dataDir, 'completed');
+
+        if (!fs.existsSync(dataDir)) {
+                res.status(404).json({ error: 'Folder not found' });
+        }
+
+        if (!fs.existsSync(completedDir)) {
+                res.json({ allCompleted: false, remainingFiles: 0 });
+        }
+
+        const mainFiles = fs.readdirSync(dataDir).filter(file =>
+                (file.endsWith('.mp4') || file.endsWith('.png')) &&
+                !file.startsWith('.')
+        );
+
+        const completedFiles = fs.readdirSync(completedDir).filter(file =>
+                (file.endsWith('.mp4') || file.endsWith('.png')) &&
+                !file.startsWith('.')
+        );
+
+        const allCompleted = mainFiles.length === 0;
+        const remainingFiles = mainFiles.length;
+
+        res.json({ allCompleted, remainingFiles, totalCompleted: completedFiles.length });
+});
+
 export default router;
 

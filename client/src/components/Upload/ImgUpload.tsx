@@ -49,9 +49,7 @@ const Image: React.FC = () => {
                         setIsUploading(false);
                         setUploadProgress(0);
                         setBatchName('');
-                        setTimeout(() => {
-                                setIsLocked(false);
-                        }, 1000);
+                        setIsLocked(false);
                 }
         };
 
