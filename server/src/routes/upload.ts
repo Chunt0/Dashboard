@@ -106,7 +106,7 @@ async function prepVid(videoPath: string, batchName: string): Promise<void> {
 
                         const buffer = fs.readFileSync(thumbnailPath);
                         const imgBase64 = buffer.toString('base64');
-                        await createImageLabel(imgBase64, tgtDir, thumbnailPath);
+                        await createLabelVideo(imgBase64, tgtDir, thumbnailPath);
                         fs.unlinkSync(thumbnailPath);
 
                         startTime += clipDuration;
@@ -170,19 +170,57 @@ async function prepImg(imagePath: string, batchName: string): Promise<void> {
                 const buf = fs.readFileSync(tgtPath);
                 const imgBase64 = buf.toString('base64');
 
-                await createImageLabel(imgBase64, tgtDir, tgtPath);
+                await createLabelImage(imgBase64, tgtDir, tgtPath);
         } catch (err) {
                 console.error('Error: ', err);
         }
 }
 
-async function createImageLabel(imgBase64: string, tgtDir: string, tgtPath: string) {
+async function createLabelImage(imgBase64: string, tgtDir: string, tgtPath: string) {
         const payload = {
                 model: 'gemma3:27b',
                 messages: [
                         {
                                 role: 'user',
-                                content: 'Create a comma separated image label describing this picture. The label keywords should be ordered by relevancy. Only return this label, no extra commentary, no quotation marks, and no redundant words.',
+                                content: 'Create a comma separated label describing this picture. The label should follow this general template "the general description of the whole scene with whatever details are critical to the image, other important thing, style, style, object, noun, type, quality, feeling, style". Only return this label, no extra commentary, no quotation marks, and no redundant words.',
+                                images: [imgBase64]
+                        }
+                ],
+                stream: false
+        };
+
+
+        const url = 'http://localhost:11434/api/chat';
+
+
+        try {
+                const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                });
+
+                const txtPath = tgtPath.replace('.png', '.txt');
+
+                if (response.ok) {
+                        const resJson = await response.json();
+                        const content = resJson.message?.content || '';
+                        await fs.promises.writeFile(txtPath, content, 'utf8');
+                } else {
+                        await fs.promises.writeFile(txtPath, '', 'utf8');
+                }
+        } catch (err) {
+                console.error('Ollama API request error: ', err);
+        }
+}
+
+async function createLabelVideo(imgBase64: string, tgtDir: string, tgtPath: string) {
+        const payload = {
+                model: 'gemma3:27b',
+                messages: [
+                        {
+                                role: 'user',
+                                content: 'Create a comma separated label describing this picture. Ensure the label gives guidance such as subjects, actions, and style cues to prompt a video generation model. Describe who/what and where - the main elements and setting of your video. Specify the movement or activity that should occur during the video. Include camera directions like "camera follows," "smooth pan," or "close-up." Set the mood with lighting, atmosphere, and artistic style descriptors. Only return this label, no extra commentary, no quotation marks, and no redundant words.',
                                 images: [imgBase64]
                         }
                 ],
