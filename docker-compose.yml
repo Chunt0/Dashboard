@@ -8,8 +8,10 @@ services:
       - ./datasets:/usr/src/app/datasets
       - ./server/uploads/:/usr/src/app/uploads
     image: dashboard-backend
+    restart: unless-stopped
 
   dashboard:
     ports:
       - 5173:5173
     image: dashboard
+    restart: unless-stopped
