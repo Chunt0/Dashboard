@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type { DragEvent } from 'react';
 
 const CHUNK_SIZE = 1 * 1024 * 1024;
-
 const UPLOAD_VIDEOS_ENDPOINT = import.meta.env.VITE_UPLOAD_VIDEOS_ENDPOINT;
 
 const Video: React.FC = () => {
@@ -117,15 +116,15 @@ const Video: React.FC = () => {
                 Promise.all(filePromises).then((filesArrays) => {
                         const allFiles = filesArrays.flat();
                         const videoFiles = allFiles.filter(f => f.type.startsWith('video/mp4'));
-                        setFiles(videoFiles);
+                        setFiles(videoFiles)
                         if (videoFiles.length > 0) {
-                                setIsLocked(true)
-                                console.log(`${videoFiles.length} video/mp4 files are ready to upload`);
-                                setLogMessage(`${videoFiles.length} video/mp4 files are ready to upload`);
+                                setIsLocked(true);
+                                console.log(`${videoFiles.length} image files are ready to upload`);
+                                setLogMessage(`${videoFiles.length} image files are ready to upload`);
                         } else {
                                 setIsLocked(false);
-                                console.log("No files of type 'video/mp4'");
-                                setLogMessage("No files of type 'video/mp4'");
+                                console.log("No files of type 'mp4'");
+                                setLogMessage("No files of type 'mp4'");
                         }
                 });
         };

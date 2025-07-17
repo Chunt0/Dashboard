@@ -5,6 +5,7 @@ const LOAD_DATASET_ENDPOINT = import.meta.env.VITE_LOAD_DATASET_ENDPOINT;
 const SUBMIT_ENDPOINT = import.meta.env.VITE_SUBMIT_ENDPOINT;
 const MEDIA_ENDPOINT = import.meta.env.VITE_MEDIA_ENDPOINT;
 const COMPLETION_STATUS_ENDPOINT = import.meta.env.VITE_COMPLETION_STATUS_ENDPOINT;
+const COMPLETE_ALL_ENDPOINT = import.meta.env.VITE_COMPLETE_ALL_ENDPOINT;
 
 const QAInterface: React.FC = () => {
         const [mediaType, setMediaType] = useState<string>('');
@@ -104,6 +105,30 @@ const QAInterface: React.FC = () => {
 
         };
 
+        const handleCompleteAll = async () => {
+                if (!folder) return;
+
+                try {
+                        const response = await fetch(COMPLETE_ALL_ENDPOINT, {
+                                method: 'POST',
+                                headers: {
+                                        'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ folder }),
+                        });
+
+                        if (response.ok) {
+                                setAllCompleted(true);
+                                setMediaSrc(''); // Clear the media view
+                                setRemainingFiles(0);
+                        } else {
+                                console.error('Failed to complete all files.');
+                        }
+                } catch (error) {
+                        console.error('Error completing all files:', error);
+                }
+        };
+
         const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 setRemoveMedia(e.target.checked);
         };
@@ -169,6 +194,13 @@ const QAInterface: React.FC = () => {
                                                         className="w-[600px] px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition"
                                                 >
                                                         <h2>Next</h2>
+                                                </button>
+                                                <br />
+                                                <button
+                                                        onClick={handleCompleteAll}
+                                                        disabled={!folder}
+                                                        className={`w-[600px] px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition ${!folder ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                        <h2>Accept All Labels</h2>
                                                 </button>
                                                 {remainingFiles > 0 && (
                                                         <div className="mt-4 text-center">

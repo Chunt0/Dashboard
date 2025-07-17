@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { DragEvent } from 'react';
 
-const CHUNK_SIZE = 1024 * 1024;
+const CHUNK_SIZE = 1 * 1024 * 1024;
 const UPLOAD_IMAGES_ENDPOINT = import.meta.env.VITE_UPLOAD_IMAGES_ENDPOINT;
 
 const Image: React.FC = () => {

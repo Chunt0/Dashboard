@@ -160,5 +160,40 @@ router.get('/completion-status/:folder', (req: Request, res: Response): void => 
         res.json({ allCompleted, remainingFiles, totalCompleted: completedFiles.length });
 });
 
+// i don't need to write a label file. just move all files mp4, png, txt and place them into completed
+router.post('/complete-all', async (req: Request, res: Response): Promise<void> => {
+        const { folder } = req.body;
+        if (!folder) {
+                res.status(400).json({ status: 'error', message: 'Folder not specified.' });
+                return;
+        }
+
+        const folderPath = path.join(datasetsDir, folder);
+        const completedFolderPath = path.join(folderPath, 'completed');
+
+        try {
+                // Ensure the completed directory exists
+                await fs.promises.mkdir(completedFolderPath, { recursive: true });
+
+                const files = await fs.promises.readdir(folderPath);
+
+                const movePromises = files
+                        .filter(file => file !== 'completed' && /\.(mp4|png|txt)$/.test(file))
+                        .map(async (file) => {
+                                const currentPath = path.join(folderPath, file);
+                                const destPath = path.join(completedFolderPath, file);
+                                await fs.promises.copyFile(currentPath, destPath);
+                                await fs.promises.unlink(currentPath);
+                        });
+
+                await Promise.all(movePromises);
+
+                res.json({ status: 'ok', message: 'All files have been moved.' });
+        } catch (err) {
+                console.error('Error processing complete-all request:', err);
+                res.status(500).json({ status: 'error', message: 'An error occurred while moving files.' });
+        }
+});
+
 export default router;
 

@@ -9,6 +9,7 @@ services:
       - ./server/uploads/:/usr/src/app/uploads
     image: dashboard-backend
     restart: unless-stopped
+    user: "${UID}:${GID}"
 
   dashboard:
     ports:
