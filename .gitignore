@@ -28,6 +28,7 @@ client/.env.local
 client/.env.development
 client/.env.test.local
 client/.env.production
+client/.env.production.backup
 
 # Server output & deps
 server/node_modules/

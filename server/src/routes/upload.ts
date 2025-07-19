@@ -307,9 +307,11 @@ router.post(
 
                         delete uploadsMap[fileId];
                         console.log(`Receive and prepped full file ${fileName} at ${new Date().toISOString()}`);
+                        res.set('Connection', 'close');
                         res.json({ message: `File ${fileName} labeled` });
                 } else {
                         console.log(`Received chunk ${chunkIndex} at ${new Date().toISOString()}`);
+                        res.set('Connection', 'close');
                         res.json({
                                 message: `Chunk ${chunkIndex} received`,
                         });
