@@ -106,7 +106,7 @@ async function prepVid(videoPath: string, batchName: string): Promise<void> {
 
                         const buffer = fs.readFileSync(thumbnailPath);
                         const imgBase64 = buffer.toString('base64');
-                        await createLabelVideo(imgBase64, tgtDir, thumbnailPath);
+                        await createLabelVideo(imgBase64, tgtDir, thumbnailPath, batchName);
                         fs.unlinkSync(thumbnailPath);
 
                         startTime += clipDuration;
@@ -170,13 +170,13 @@ async function prepImg(imagePath: string, batchName: string): Promise<void> {
                 const buf = fs.readFileSync(tgtPath);
                 const imgBase64 = buf.toString('base64');
 
-                await createLabelImage(imgBase64, tgtDir, tgtPath);
+                await createLabelImage(imgBase64, tgtDir, tgtPath, batchName);
         } catch (err) {
                 console.error('Error: ', err);
         }
 }
 
-async function createLabelImage(imgBase64: string, tgtDir: string, tgtPath: string) {
+async function createLabelImage(imgBase64: string, tgtDir: string, tgtPath: string, batchName: string) {
         const payload = {
                 model: 'gemma3:27b',
                 messages: [
@@ -205,7 +205,8 @@ async function createLabelImage(imgBase64: string, tgtDir: string, tgtPath: stri
                 if (response.ok) {
                         const resJson = await response.json();
                         const content = resJson.message?.content || '';
-                        await fs.promises.writeFile(txtPath, content, 'utf8');
+                        const label = `in the style of ${batchName}, ${content}`;
+                        await fs.promises.writeFile(txtPath, label, 'utf8');
                 } else {
                         await fs.promises.writeFile(txtPath, '', 'utf8');
                 }
@@ -214,7 +215,7 @@ async function createLabelImage(imgBase64: string, tgtDir: string, tgtPath: stri
         }
 }
 
-async function createLabelVideo(imgBase64: string, tgtDir: string, tgtPath: string) {
+async function createLabelVideo(imgBase64: string, tgtDir: string, tgtPath: string, batchName: string) {
         const payload = {
                 model: 'gemma3:27b',
                 messages: [
@@ -243,7 +244,8 @@ async function createLabelVideo(imgBase64: string, tgtDir: string, tgtPath: stri
                 if (response.ok) {
                         const resJson = await response.json();
                         const content = resJson.message?.content || '';
-                        await fs.promises.writeFile(txtPath, content, 'utf8');
+                        const label = `in the style of ${batchName}, ${content}`;
+                        await fs.promises.writeFile(txtPath, label, 'utf8');
                 } else {
                         await fs.promises.writeFile(txtPath, '', 'utf8');
                 }
@@ -381,4 +383,4 @@ router.post(
         }
 );
 
-export default router; 
+export default router;
