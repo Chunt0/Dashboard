@@ -31,6 +31,7 @@ COPY server/dist ./dist
 ENV NODE_ENV=production \
 	DATA_DIR=/usr/src/app/datasets \
 	MODEL_DIR=/usr/src/app/models \
+	TEMP_DIR=/usr/src/app/temp \
 	DIFFUSION_PIPE_DIR=/opt/diffusion-pipe
 
 

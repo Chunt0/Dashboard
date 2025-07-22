@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import routes, { processTrainingQueue } from './routes';
+import routes from './routes';
 import dotenv from 'dotenv';
 import { getRedisClient } from './utils/redisClient';
 
@@ -27,9 +27,6 @@ async function startServer() {
                 server = app.listen(PORT, () => {
                         console.log(`Server listening on ${PORT}`);
                 });
-
-                // Start the training queue processor
-                // processTrainingQueue();
 
                 process.on('SIGINT', shutdown);
                 process.on('SIGTERM', shutdown);

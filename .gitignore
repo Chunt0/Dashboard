@@ -42,6 +42,7 @@ server/.env.test.local
 server/.env.production
 server/uploads/
 server/logs/
+server/temp/
 
 # TypeScript
 *.tsbuildinfo

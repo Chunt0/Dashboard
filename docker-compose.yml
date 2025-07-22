@@ -27,6 +27,7 @@ services:
     volumes:
       - ./datasets:/usr/src/app/datasets
       - ./models:/usr/src/app/models
+      - ./server/temp/:/usr/src/app/temp
     restart: unless-stopped
     user: "${UID}:${GID}"
     deploy:
