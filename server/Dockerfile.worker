@@ -32,7 +32,12 @@ ENV NODE_ENV=production \
 	DATA_DIR=/usr/src/app/datasets \
 	MODEL_DIR=/usr/src/app/models \
 	TEMP_DIR=/usr/src/app/temp \
-	DIFFUSION_PIPE_DIR=/opt/diffusion-pipe
+	DIFFUSION_PIPE_DIR=/opt/diffusion-pipe \
+	DATASET_TOML_TEMPLATE=/usr/src/app/examples/dataset.toml \
+	FLUX_TOML_TEMPLATE=/usr/src/app/examples/flux.toml \
+	SDXL_TOML_TEMPLATE=/usr/src/app/examples/sdxl.toml \
+	WAN_TOML_TEMPLATE=/usr/src/app/examples/wan.toml \
+	LTX_TOML_TEMPLATE=/usr/src/app/examples/ltx.toml \
 
 
 CMD ["node", "dist/queueWorker.js"]

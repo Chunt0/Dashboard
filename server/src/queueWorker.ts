@@ -20,11 +20,11 @@ const datasetDir = process.env.DATA_DIR || path.resolve(__dirname, '../../datase
 const modelsDir = process.env.MODEL_DIR || path.resolve(__dirname, '../../models/');
 const diffusionPipeDir = process.env.DIFFUSION_PIPE_DIR || path.resolve(__dirname, '../../../diffusion-pipe/');
 const tempDir = process.env.TEMP_DIR || path.resolve(__dirname, '../temp/');
-const datasetTomlTemplate = process.env.DATASET_TOML_TEMPLATE || path.resolve(__dirname, '../dataset.toml');
-const fluxTomlTemplate = process.env.FLUX_TOML_TEMPLATE || path.resolve(__dirname, '../flux.toml');
-const sdxlTomlTemplate = process.env.SDXL_TOML_TEMPLATE || path.resolve(__dirname, '../sdxl.toml');
-const wanTomlTemplate = process.env.WAN_TOML_TEMPLATE || path.resolve(__dirname, '../wan.toml');
-const ltxTomlTemplate = process.env.LTX_TOML_TEMPLATE || path.resolve(__dirname, '../ltx.toml');
+const datasetTomlTemplate = process.env.DATASET_TOML_TEMPLATE || path.resolve(__dirname, '../examples/dataset.toml');
+const fluxTomlTemplate = process.env.FLUX_TOML_TEMPLATE || path.resolve(__dirname, '../examples/flux.toml');
+const sdxlTomlTemplate = process.env.SDXL_TOML_TEMPLATE || path.resolve(__dirname, '../examples/sdxl.toml');
+const wanTomlTemplate = process.env.WAN_TOML_TEMPLATE || path.resolve(__dirname, '../examples/wan.toml');
+const ltxTomlTemplate = process.env.LTX_TOML_TEMPLATE || path.resolve(__dirname, '../examples/ltx.toml');
 
 async function startWorker() {
         const redis = await getRedisClient();
@@ -58,6 +58,7 @@ async function startWorker() {
                         case 'flux':
                                 modelTemplatePath = fluxTomlTemplate;
                                 const modelTomlString = fs.readFileSync(modelTemplatePath, 'utf-8');
+                                const modelConfig = TOML.parse(modelTomlString)
                                 const modelConfigOutPath = path.resolve(tempDir, `${job.dataset}.toml`);
                                 fs.writeFileSync(modelConfigOutPath, modelTomlString);
                                 break;
