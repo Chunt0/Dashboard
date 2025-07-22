@@ -2,6 +2,7 @@ chat.md
 datasets/
 diffusion-pipe/
 output/
+models/
 
 # Top-level node_modules
 node_modules/
