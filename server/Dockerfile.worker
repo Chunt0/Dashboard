@@ -23,6 +23,7 @@ WORKDIR /usr/src/app
 
 COPY server/package.json ./
 COPY pnpm-lock.yaml ./
+COPY server/examples ./examples/
 
 RUN npm install -g pnpm && pnpm install --filter ./...
 
