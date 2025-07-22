@@ -2,7 +2,7 @@ import { Router } from "express";
 import healthRoutes from './health';
 import uploadRoutes from './upload';
 import qaRoutes from './qa';
-import trainRoutes from './train';
+import trainRoutes, { processTrainingQueue } from './train';
 
 const router = Router();
 
@@ -11,4 +11,4 @@ router.use('/upload', uploadRoutes);
 router.use('/qa', qaRoutes);
 router.use('/train', trainRoutes);
 
-export default router;
+export { router as default, processTrainingQueue };
