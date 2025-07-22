@@ -6,16 +6,27 @@ services:
     restart: unless-stopped
 
   dashboard-backend:
-    depends_on:
-      - redis
-    image: dashboard-backend
     network_mode: host
+    image: dashboard-backend
     ports:
       - 3003:3003
     volumes:
       - ./datasets:/usr/src/app/datasets
-      - ./models:/usr/src/app/models
       - ./server/uploads/:/usr/src/app/uploads
+    restart: unless-stopped
+    user: "${UID}:${GID}"
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://localhost:6379
+    depends_on:
+      - redis
+
+  dashboard-worker:
+    network_mode: host
+    image: dashboard-worker
+    volumes:
+      - ./datasets:/usr/src/app/datasets
+      - ./models:/usr/src/app/models
     restart: unless-stopped
     user: "${UID}:${GID}"
     deploy:
@@ -26,8 +37,14 @@ services:
     environment:
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      REDIS_URL: redis://localhost:6379
+    depends_on:
+      - redis
 
   dashboard:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
     image: dashboard
     ports:
       - 5173:5173

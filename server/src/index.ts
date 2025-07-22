@@ -29,7 +29,7 @@ async function startServer() {
                 });
 
                 // Start the training queue processor
-                processTrainingQueue();
+                // processTrainingQueue();
 
                 process.on('SIGINT', shutdown);
                 process.on('SIGTERM', shutdown);
