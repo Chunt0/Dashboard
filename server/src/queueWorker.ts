@@ -90,6 +90,7 @@ interface DirectoryEntry {
 }
 
 interface DatasetConfig {
+        resolutions: [number];
         enable_ar_bucket: boolean;
         min_ar: number;
         max_ar: number;
@@ -154,7 +155,7 @@ async function startWorker() {
                                 fs.writeFileSync(modelConfigOutPath, updatedModelTomlString);
                                 console.log(`Training ${job.dataset} for model: ${job.modelType}`);
                                 const trainingScriptPath = path.resolve(diffusionPipeDir, 'train.py');
-                                return new Promise<void>((resolve, reject) => {
+                                await new Promise<void>((resolve, reject) => {
                                         const child = spawn('deepspeed', [
                                                 '--num_gpus=1',
                                                 trainingScriptPath,
@@ -163,17 +164,28 @@ async function startWorker() {
                                                 modelConfigOutPath
                                         ], { stdio: 'inherit' });
 
-                                        child.on('exit', (code) => {
-                                                if (code === 0) {
-                                                        resolve();
-                                                } else {
-                                                        reject(new Error(`Training process exited with code ${code}`));
-                                                }
-                                        });
+                                        let didFinish = false;
 
+                                        function finish(label: string, code?: number | null, error?: Error) {
+                                                if (didFinish) return;
+                                                didFinish = true;
+
+                                                if (error) {
+                                                        console.error(`[${label}] Subprocess error:`, error);
+                                                } else {
+                                                        console.log(`[${label}] Subprocess exited with code:`, code);
+                                                }
+
+                                                // always resolve so the script continues
+                                                resolve();
+                                        }
+
+                                        child.on('error', (err) => finish('error', null, err));
+                                        child.on('exit', (code) => finish('exit', code));
+                                        child.on('close', (code) => finish('close', code));
                                 });
-                                //fs.unlinkSync(datasetConfigOutPath);
-                                //fs.unlinkSync(modelConfigOutPath);
+                                fs.unlinkSync(datasetConfigOutPath);
+                                fs.unlinkSync(modelConfigOutPath);
                                 break;
                         default:
                                 throw new Error(`Unknown modelType: ${job.modelType}`);

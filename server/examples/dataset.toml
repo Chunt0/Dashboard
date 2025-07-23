@@ -1,3 +1,4 @@
+resolutions = [1024]
 enable_ar_bucket = true
 min_ar = 0.5
 max_ar = 2.0

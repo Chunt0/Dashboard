@@ -23,7 +23,7 @@ type = 'flux'
 diffusers_path = ''
 transformer_path = ''
 dtype = 'bfloat16'
-transformer_dtype = 'float8'
+transformer_dtype = 'float16'
 flux_shift = true
 [adapter]
 type = 'lora'
