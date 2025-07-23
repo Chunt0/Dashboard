@@ -2,20 +2,33 @@ FROM nvidia/cuda:12.8.0-devel-ubuntu22.04
 
 RUN apt-get update && \
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-	curl git ffmpeg ca-certificates build-essential python3-pip && \
+	curl git wget ffmpeg ca-certificates build-essential python3-pip && \
 	rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 	apt-get install -y --no-install-recommends nodejs && \
 	npm --version
 
-RUN python3 -m pip install --upgrade pip && \
-	pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+# Install Miniconda
+ENV CONDA_DIR=/opt/conda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
+    bash miniconda.sh -b -p $CONDA_DIR && \
+    rm miniconda.sh
+ENV PATH=$CONDA_DIR/bin:$PATH
 
-RUN pip install packaging
+
+RUN conda config --set always_yes yes && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
+    conda create -n diffusion-pipe python=3.12
+
+ENV PATH=$CONDA_DIR/envs/diffusion-pipe/bin:$PATH
+
+RUN pip install --upgrade pip && \
+	pip install torch torchvision torchaudio packaging --index-url https://download.pytorch.org/whl/cu128
 
 WORKDIR /opt
-RUN git clone --recurse-submodules https://github.com/tdrussell/diffusion-pipe
+RUN git clone --recurse-submodules https://github.com/chunt0/diffusion-pipe
 WORKDIR /opt/diffusion-pipe
 RUN pip install -r requirements.txt
 
