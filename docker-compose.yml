@@ -12,7 +12,8 @@ services:
       - 3003:3003
     volumes:
       - ./datasets:/usr/src/app/datasets
-      - ./server/uploads/:/usr/src/app/uploads
+      - ./server/uploads:/usr/src/app/uploads
+      - /home/chunt/ComfyUI/output/putty-ai:/usr/src/app/output
     restart: unless-stopped
     user: "${UID}:${GID}"
     environment:
@@ -28,6 +29,7 @@ services:
       - ./datasets:/usr/src/app/datasets
       - ./models:/usr/src/app/models
       - ./server/temp/:/usr/src/app/temp
+      - /home/chunt/.triton/:/tmp/.triton
     restart: unless-stopped
     user: "${UID}:${GID}"
     deploy:
@@ -39,6 +41,7 @@ services:
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       REDIS_URL: redis://localhost:6379
+      TRITON_CACHE_DIR: /tmp/.triton
     depends_on:
       - redis
 

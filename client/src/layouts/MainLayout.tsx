@@ -14,6 +14,7 @@ import TrainingNavbar from '../components/Training/TrainingNavbar';
 import TrainSDXL from '../components/Training/TrainSDXL';
 import TrainFlux from '../components/Training/TrainFlux';
 import TrainWAN from '../components/Training/TrainWAN';
+import Generate from '../pages/Generate';
 
 const Layout: React.FC = () => {
         const location = useLocation();
@@ -36,6 +37,7 @@ const Layout: React.FC = () => {
                                         <Route path="/train/sdxl" element={<TrainSDXL />} />
                                         <Route path="/train/flux" element={<TrainFlux />} />
                                         <Route path="/train/wan" element={<TrainWAN />} />
+                                        <Route path="/generate" element={<Generate />} />
                                 </Routes>
                         </div>
                 </div>

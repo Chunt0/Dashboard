@@ -12,7 +12,8 @@ COPY server/dist ./dist
 ENV PORT=3003 \
     NODE_ENV=production \
     UPLOAD_DIR=/usr/src/app/uploads \
-    DATA_DIR=/usr/src/app/datasets
+    DATA_DIR=/usr/src/app/datasets \
+    COMFY_OUTPUT_DIR=/usr/src/app/output
 
 EXPOSE 3003
 
