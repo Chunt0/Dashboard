@@ -145,27 +145,35 @@ async function startWorker() {
                                 const outputDir = path.resolve(datasetDir, job.dataset, 'output');
                                 modelConfig.output_dir = outputDir;
                                 modelConfig.dataset = datasetConfigOutPath;
-                                const diffusersPath = path.resolve(modelsDir, 'flux');
+                                const diffusersPath = path.resolve(modelsDir, 'flux.1_dev');
                                 modelConfig.model.diffusers_path = diffusersPath;
                                 const transformerPath = path.resolve(diffusersPath, 'flux1-dev.safetensors');
                                 modelConfig.model.transformer_path = transformerPath;
                                 const modelConfigOutPath = path.resolve(tempDir, `${job.dataset}.toml`);
-                                fs.writeFileSync(modelConfigOutPath, modelTomlString);
+                                const updatedModelTomlString = TOML.stringify(modelConfig as any);
+                                fs.writeFileSync(modelConfigOutPath, updatedModelTomlString);
                                 console.log(`Training ${job.dataset} for model: ${job.modelType}`);
                                 const trainingScriptPath = path.resolve(diffusionPipeDir, 'train.py');
-                                const child = spawn('deepspeed', [
-                                        '--num_gpus=1',
-                                        trainingScriptPath,
-                                        '--deepspeed',
-                                        '--config',
-                                        modelConfigOutPath
-                                ], { stdio: 'inherit' });
+                                return new Promise<void>((resolve, reject) => {
+                                        const child = spawn('deepspeed', [
+                                                '--num_gpus=1',
+                                                trainingScriptPath,
+                                                '--deepspeed',
+                                                '--config',
+                                                modelConfigOutPath
+                                        ], { stdio: 'inherit' });
 
-                                child.on('exit', (code) => {
-                                        console.log(`Training process exited with code ${code}`);
+                                        child.on('exit', (code) => {
+                                                if (code === 0) {
+                                                        resolve();
+                                                } else {
+                                                        reject(new Error(`Training process exited with code ${code}`));
+                                                }
+                                        });
+
                                 });
-                                fs.unlinkSync(datasetConfigOutPath);
-                                fs.unlinkSync(modelConfigOutPath);
+                                //fs.unlinkSync(datasetConfigOutPath);
+                                //fs.unlinkSync(modelConfigOutPath);
                                 break;
                         default:
                                 throw new Error(`Unknown modelType: ${job.modelType}`);
