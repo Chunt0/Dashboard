@@ -9,12 +9,15 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 	apt-get install -y --no-install-recommends nodejs && \
 	npm --version
 
+RUN useradd -m -u 1000 dockeruser
+
 # Install Miniconda
 ENV CONDA_DIR=/opt/conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
     bash miniconda.sh -b -p $CONDA_DIR && \
     rm miniconda.sh
 ENV PATH=$CONDA_DIR/bin:$PATH
+RUN chown -R dockeruser /opt/conda
 
 
 RUN conda config --set always_yes yes && \
@@ -34,9 +37,9 @@ RUN pip install -r requirements.txt
 
 WORKDIR /usr/src/app
 
+COPY server/examples ./examples/
 COPY server/package.json ./
 COPY pnpm-lock.yaml ./
-COPY server/examples ./examples/
 
 RUN npm install -g pnpm && pnpm install --filter ./...
 
@@ -53,5 +56,6 @@ ENV NODE_ENV=production \
 	WAN_TOML_TEMPLATE=/usr/src/app/examples/wan.toml \
 	LTX_TOML_TEMPLATE=/usr/src/app/examples/ltx.toml 
 
+USER dockeruser
 
 CMD ["node", "dist/queueWorker.js"]

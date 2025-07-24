@@ -374,8 +374,10 @@ router.post(
                         await prepImg(finalPath, batchName);
 
                         delete uploadsMap[fileId];
+                        res.set('Connection', 'close');
                         res.json({ message: `File ${fileName} labeled` });
                 } else {
+                        res.set('Connection', 'close');
                         res.json({
                                 message: `Chunk ${chunkIndex} received`,
                         });

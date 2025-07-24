@@ -1,6 +1,6 @@
 output_dir = ''
 dataset = ''
-epochs = 1
+epochs = 25
 micro_batch_size_per_gpu = 1
 pipeline_stages = 1
 gradient_accumulation_steps = 1
