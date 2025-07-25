@@ -25,6 +25,7 @@ services:
   dashboard-worker:
     network_mode: host
     image: dashboard-worker
+    shm_size: 64g
     volumes:
       - ./datasets:/usr/src/app/datasets
       - ./models:/usr/src/app/models
