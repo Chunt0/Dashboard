@@ -1,40 +1,44 @@
+## Utilize full CUDA runtime - this needs to be able to us nvcc
 FROM nvidia/cuda:12.8.0-devel-ubuntu22.04
 
+## Install all necessary commands in order to build the project
 RUN apt-get update && \
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
 	curl git wget ffmpeg ca-certificates build-essential python3-pip && \
 	rm -rf /var/lib/apt/lists/*
 
+## Install node
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 	apt-get install -y --no-install-recommends nodejs && \
 	npm --version
 
+## Create a user, this is because some of the diffusion-pipe code requires the user executing the function to have specific privileges
 RUN useradd -m -u 1000 dockeruser
 
-# Install Miniconda
+## Install Miniconda. The CUDA runtime we use comes with python3.10 when we need to use 3.12, using conda to manage the environment was easier than using a python3.12 image
 ENV CONDA_DIR=/opt/conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
     bash miniconda.sh -b -p $CONDA_DIR && \
     rm miniconda.sh
 ENV PATH=$CONDA_DIR/bin:$PATH
 RUN chown -R dockeruser /opt/conda
-
-
 RUN conda config --set always_yes yes && \
     conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
     conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
     conda create -n diffusion-pipe python=3.12
 
+## Set this conda env to the path in order to force the image to use it's version of python, docker doesn't seem to allow you to activate environments in the same manner as you would in a desktop env
 ENV PATH=$CONDA_DIR/envs/diffusion-pipe/bin:$PATH
 
+## Install all necessary diffusion-pipe dependencies
 RUN pip install --upgrade pip && \
 	pip install torch torchvision torchaudio packaging --index-url https://download.pytorch.org/whl/cu128
-
 WORKDIR /opt
 RUN git clone --recurse-submodules https://github.com/chunt0/diffusion-pipe
 WORKDIR /opt/diffusion-pipe
 RUN pip install -r requirements.txt
 
+## Now that the python and diffusion-pipe stuff has been properly installed and set start to copy the necessary typescript worker components
 WORKDIR /usr/src/app
 
 COPY server/examples ./examples/
@@ -56,6 +60,7 @@ ENV NODE_ENV=production \
 	WAN_TOML_TEMPLATE=/usr/src/app/examples/wan.toml \
 	LTX_TOML_TEMPLATE=/usr/src/app/examples/ltx.toml 
 
+## Switch to the appropriate user
 USER dockeruser
 
 CMD ["node", "dist/queueWorker.js"]

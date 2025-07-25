@@ -51,17 +51,17 @@ function Navbar() {
                                 >
                                         Train
                                 </NavLink>
-                                {/*<NavLink
-          to="/generate"
-          style={({ isActive }) => ({
-            color: isActive ? "#fff" : "#aaa",
-            marginRight: "2rem",
-            textDecoration: "none",
-            fontWeight: isActive ? "bold" : "normal"
-          })}
-        >
-          Generate
-        </NavLink>*/}
+                                <NavLink
+                                        to="/generate"
+                                        style={({ isActive }) => ({
+                                                color: isActive ? "#fff" : "#aaa",
+                                                marginRight: "2rem",
+                                                textDecoration: "none",
+                                                fontWeight: isActive ? "bold" : "normal"
+                                        })}
+                                >
+                                        Generate
+                                </NavLink>
                                 <HealthIndicator />
                         </div>
                 </nav>
