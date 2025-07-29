@@ -62,6 +62,47 @@ const Image: React.FC = () => {
                 e.stopPropagation();
         };
 
+        const readAllEntries = (dirReader: any): Promise<any[]> => {
+                return new Promise((resolve) => {
+                        const entries: any[] = [];
+                        const readBatch = () => {
+                                dirReader.readEntries((batch: any[]) => {
+                                        if (batch.length === 0) {
+                                                resolve(entries);
+                                        } else {
+                                                entries.push(...batch);
+                                                readBatch();
+                                        }
+                                });
+                        };
+                        readBatch();
+                });
+        };
+
+        const traverseFileTree = async (entry: any, path = ''): Promise<File[]> => {
+                if (entry.isFile) {
+                        return new Promise((resolve) => {
+                                (entry as any).file((file: File) => {
+                                        Object.defineProperty(file, 'relativePath', { value: path + file.name });
+                                        resolve([file]);
+                                });
+                        });
+                } else if (entry.isDirectory) {
+                        if (batchName === '') setBatchName(entry.name);
+
+                        const dirReader = (entry as any).createReader();
+                        const entries = await readAllEntries(dirReader);
+
+                        const nestedFiles = await Promise.all(
+                                entries.map((ent: any) => traverseFileTree(ent, path + entry.name + '/'))
+                        );
+
+                        return nestedFiles.flat();
+                } else {
+                        return [];
+                }
+        };
+
         const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -69,7 +110,6 @@ const Image: React.FC = () => {
                 if (isLocked) return;
 
                 const items = e.dataTransfer.items;
-
                 const filePromises: Promise<File[]>[] = [];
 
                 for (let i = 0; i < items.length; i++) {
@@ -77,55 +117,25 @@ const Image: React.FC = () => {
                         if (item.kind === 'file') {
                                 const entry = item.webkitGetAsEntry();
                                 if (entry) {
-                                        // Recursively read directory entries
-                                        const traverseFileTree = (entry: any, path = ''): Promise<File[]> => {
-                                                return new Promise((resolve) => {
-                                                        if (entry.isFile) {
-                                                                (entry as any).file((file: File) => {
-                                                                        // optional: set file.path or name with directory prefix
-                                                                        Object.defineProperty(file, 'relativePath', {
-                                                                                value: path + file.name,
-                                                                        });
-                                                                        resolve([file]);
-                                                                });
-                                                        } else if (entry.isDirectory) {
-                                                                if (batchName === '') {
-                                                                        setBatchName(entry.name);
-                                                                }
-                                                                const dirReader = (entry as any).createReader();
-                                                                dirReader.readEntries((entries: any[]) => {
-                                                                        const filesInDir: Promise<File[]>[] = entries.map((ent) =>
-                                                                                traverseFileTree(ent, path + entry.name + '/')
-                                                                        );
-                                                                        Promise.all(filesInDir).then((nestedFiles) => {
-                                                                                resolve(nestedFiles.flat());
-                                                                        });
-                                                                });
-                                                        } else {
-                                                                resolve([]);
-                                                        }
-                                                });
-                                        };
-
-                                        await filePromises.push(traverseFileTree(entry));
+                                        filePromises.push(traverseFileTree(entry));
                                 }
                         }
                 }
 
-                Promise.all(filePromises).then((filesArrays) => {
-                        const allFiles = filesArrays.flat();
-                        const imageFiles = allFiles.filter(f => f.type.startsWith('image/'));
-                        setFiles(imageFiles);
-                        if (imageFiles.length > 0) {
-                                setIsLocked(true)
-                                console.log(`${imageFiles.length} image files are ready to upload`);
-                                setLogMessage(`${imageFiles.length} image files are ready to upload`);
-                        } else {
-                                setIsLocked(false);
-                                console.log("No files of type 'image'");
-                                setLogMessage("No files of type 'image'");
-                        }
-                });
+                const filesArrays = await Promise.all(filePromises);
+                const allFiles = filesArrays.flat();
+                const imageFiles = allFiles.filter(f => f.type.startsWith('image/'));
+
+                setFiles(imageFiles);
+                if (imageFiles.length > 0) {
+                        setIsLocked(true);
+                        console.log(`${imageFiles.length} image files are ready to upload`);
+                        setLogMessage(`${imageFiles.length} image files are ready to upload`);
+                } else {
+                        setIsLocked(false);
+                        console.log("No files of type 'image'");
+                        setLogMessage("No files of type 'image'");
+                }
         };
 
         return (
