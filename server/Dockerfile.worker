@@ -63,4 +63,4 @@ ENV NODE_ENV=production \
 ## Switch to the appropriate user
 USER dockeruser
 
-CMD ["node", "dist/queueWorker.js"]
+CMD ["node", "dist/trainer/queueWorker.js"]
