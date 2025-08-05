@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:worker\"",
     "dev:api": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "dev:worker": "nodemon --watch src --ext ts --exec ts-node src/queueWorker.ts",
+    "dev:worker": "nodemon --watch src --ext ts --exec ts-node src/trainer/queueWorker.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "start:worker": "node dist/queueWorker.js"
+    "start:worker": "node dist/trainer/queueWorker.js"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
