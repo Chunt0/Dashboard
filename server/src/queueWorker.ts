@@ -4,6 +4,8 @@ import TOML from '@iarna/toml';
 import { getRedisClient } from './utils/redisClient';
 import { spawn } from 'child_process';
 
+// TODO: The startWorker function will need to be made flexible depending on what model is being trained and what GPU resources are available. Modularize the code and class types are better organized
+
 interface FluxConfig {
         type: string;
         diffusers_path: string;
@@ -137,6 +139,7 @@ async function startWorker() {
                 fs.writeFileSync(datasetConfigOutPath, updatedDatasetToml);
 
                 // --- Model TOML ---
+                // TODO: Update this so that it detects whether there are multiple GPUS or not and change the spawned command accordingly
                 let modelTemplatePath: string;
                 switch (job.modelType) {
                         case 'flux':
