@@ -9,29 +9,31 @@ export interface FluxConfig {
 
 export interface SDXLConfig {
         type: string;
-        diffusers_path: string;
-        transformer_path: string;
+        checkpoint_path: string;
         dtype: string;
-        transformer_dtype: string;
-        flux_shift: boolean;
+        min_snr_gamma: number;
+        debiased_estimation_loss: boolean;
+        //unet_lr: number; // ie. 4e-5 i don't know how typescript handles this number formatting
+        //text_encoder_1_lr: number; // ie. 4e-5 i don't know how typescript handles this number formatting
+        //text_encoder_2_lr: number; // ie. 4e-5 i don't know how typescript handles this number formatting
 }
 
 export interface WanConfig {
         type: string;
-        diffusers_path: string;
-        transformer_path: string;
+        ckpt_path: string;
         dtype: string;
-        transformer_dtype: string;
-        flux_shift: boolean;
+        //transformer_dtype: string; // this is currently commented out in the example, not sure why gotta figure this one out
+        timestep_sample_method: string;
 }
 
 export interface LTXConfig {
         type: string;
         diffusers_path: string;
-        transformer_path: string;
+        single_file_path: string;
         dtype: string;
-        transformer_dtype: string;
-        flux_shift: boolean;
+        //transformer_dtype: string; // this is commented out in the example
+        timestep_sample_method: string;
+        //first_frame_conditioning_p : number;
 }
 
 export interface AdapterConfig {

@@ -27,7 +27,6 @@ caching_batch_size = 1
 compile = true
 steps_per_print = 1
 [model]
-[model]
 type = 'ltx-video'
 diffusers_path = '/data2/imagegen_models/LTX-Video'
 # Point this to one of the single checkpoint files to load the transformer and VAE from it.

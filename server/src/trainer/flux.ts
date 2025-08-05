@@ -4,12 +4,12 @@ import TOML from '@iarna/toml';
 import { spawn } from 'child_process';
 import { BaseConfig, DatasetConfig } from './config';
 
-const datasetDir = process.env.DATA_DIR || path.resolve(__dirname, '../../datasets/');
-const modelsDir = process.env.MODEL_DIR || path.resolve(__dirname, '../../models/');
-const diffusionPipeDir = process.env.DIFFUSION_PIPE_DIR || path.resolve(__dirname, '../../../diffusion-pipe/');
-const tempDir = process.env.TEMP_DIR || path.resolve(__dirname, '../temp/');
-const datasetTomlTemplate = process.env.DATASET_TOML_TEMPLATE || path.resolve(__dirname, '../examples/dataset.toml');
-const fluxTomlTemplate = process.env.FLUX_TOML_TEMPLATE || path.resolve(__dirname, '../examples/flux.toml');
+const datasetDir = process.env.DATA_DIR || path.resolve(__dirname, '../../../datasets/');
+const modelsDir = process.env.MODEL_DIR || path.resolve(__dirname, '../../../models/');
+const diffusionPipeDir = process.env.DIFFUSION_PIPE_DIR || path.resolve(__dirname, '../../../../diffusion-pipe/');
+const tempDir = process.env.TEMP_DIR || path.resolve(__dirname, '../../temp/');
+const datasetTomlTemplate = process.env.DATASET_TOML_TEMPLATE || path.resolve(__dirname, '../../examples/dataset.toml');
+const fluxTomlTemplate = process.env.FLUX_TOML_TEMPLATE || path.resolve(__dirname, '../../examples/sdxl.toml');
 
 export interface Job {
         dataset: string;
@@ -41,6 +41,7 @@ export async function trainFlux(job: Job) {
         const outputDir = path.resolve(datasetDir, job.dataset, 'output');
         modelConfig.output_dir = outputDir;
         modelConfig.dataset = datasetConfigOutPath;
+        // TODO: Not sure how to fix this. The modelToml file is specific to the model type. do i have to create specific model configs instead of a base on that accounts for each different model? i dunno yet. this will need to be fixed for each
         const diffusersPath = path.resolve(modelsDir, 'flux.1_dev');
         modelConfig.model.diffusers_path = diffusersPath;
         const transformerPath = path.resolve(diffusersPath, 'flux1-dev.safetensors');
