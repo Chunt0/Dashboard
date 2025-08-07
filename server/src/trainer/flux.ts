@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import TOML from '@iarna/toml';
 import { spawn } from 'child_process';
-import { BaseConfig, DatasetConfig } from './config';
+import { BaseConfig, DatasetConfig, FluxConfig } from './config';
 
 const datasetDir = process.env.DATA_DIR || path.resolve(__dirname, '../../../datasets/');
 const modelsDir = process.env.MODEL_DIR || path.resolve(__dirname, '../../../models/');
@@ -37,11 +37,10 @@ export async function trainFlux(job: Job) {
         let modelTemplatePath: string;
         modelTemplatePath = fluxTomlTemplate;
         const modelTomlString = fs.readFileSync(modelTemplatePath, 'utf-8');
-        const modelConfig = TOML.parse(modelTomlString) as unknown as BaseConfig;
+        const modelConfig = TOML.parse(modelTomlString) as unknown as BaseConfig<FluxConfig>;
         const outputDir = path.resolve(datasetDir, job.dataset, 'output');
         modelConfig.output_dir = outputDir;
         modelConfig.dataset = datasetConfigOutPath;
-        // TODO: Not sure how to fix this. The modelToml file is specific to the model type. do i have to create specific model configs instead of a base on that accounts for each different model? i dunno yet. this will need to be fixed for each
         const diffusersPath = path.resolve(modelsDir, 'flux.1_dev');
         modelConfig.model.diffusers_path = diffusersPath;
         const transformerPath = path.resolve(diffusersPath, 'flux1-dev.safetensors');

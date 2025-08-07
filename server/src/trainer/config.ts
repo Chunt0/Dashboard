@@ -56,7 +56,7 @@ export interface MonitoringConfig {
         wandb_run_name: string;
 }
 
-export interface BaseConfig {
+export interface BaseConfig<T> {
         output_dir: string;
         dataset: string;
         epochs: number;
@@ -77,7 +77,7 @@ export interface BaseConfig {
         caching_batch_size: number;
         compile: boolean;
         steps_per_print: number;
-        model: FluxConfig | SDXLConfig | WanConfig | LTXConfig;
+        model: T;
         adapter: AdapterConfig;
         optimizer: OptimizerConfig;
         monitoring: MonitoringConfig;

@@ -38,13 +38,13 @@ export async function trainSdxl(job: Job) {
         modelTemplatePath = sdxlTomlTemplate;
         const modelTomlString = fs.readFileSync(modelTemplatePath, 'utf-8');
         // TODO: Not sure how to fix this. The modelToml file is specific to the model type. do i have to create specific model configs instead of a base on that accounts for each different model? i dunno yet. this will need to be fixed for each
-        const modelConfig = TOML.parse(modelTomlString) as unknown as BaseConfig;
+        const modelConfig = TOML.parse(modelTomlString) as unknown as BaseConfig<SDXLConfig>;
         const outputDir = path.resolve(datasetDir, job.dataset, 'output');
         modelConfig.output_dir = outputDir;
         modelConfig.dataset = datasetConfigOutPath;
         // set specific model params:
         const checkpointPath = path.resolve(modelsDir, 'sdxl/Juggernaut-XI-byRunDiffusion.safetensors');
-        modelConfig.model.checkpoint_path = checkpointPathPath;
+        modelConfig.model.checkpoint_path = checkpointPath;
         const modelConfigOutPath = path.resolve(tempDir, `${job.dataset}.toml`);
         const updatedModelTomlString = TOML.stringify(modelConfig as any);
         fs.writeFileSync(modelConfigOutPath, updatedModelTomlString);
