@@ -1,5 +1,6 @@
 import { getRedisClient } from '../utils/redisClient';
 import { trainFlux, Job } from './flux';
+import { trainSdxl } from './sdxl';
 
 async function startWorker() {
         const redis = await getRedisClient();
@@ -30,7 +31,7 @@ async function startWorker() {
                                         await trainFlux(job);
                                         break;
                                 case 'sdxl':
-                                        // TODO: handle SDXL jobs
+                                        await trainSdxl(job);
                                         break;
                                 case 'wan':
                                         // TODO: handle WAN jobs

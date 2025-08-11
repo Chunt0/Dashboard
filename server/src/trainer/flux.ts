@@ -9,7 +9,7 @@ const modelsDir = process.env.MODEL_DIR || path.resolve(__dirname, '../../../mod
 const diffusionPipeDir = process.env.DIFFUSION_PIPE_DIR || path.resolve(__dirname, '../../../../diffusion-pipe/');
 const tempDir = process.env.TEMP_DIR || path.resolve(__dirname, '../../temp/');
 const datasetTomlTemplate = process.env.DATASET_TOML_TEMPLATE || path.resolve(__dirname, '../../examples/dataset.toml');
-const fluxTomlTemplate = process.env.FLUX_TOML_TEMPLATE || path.resolve(__dirname, '../../examples/sdxl.toml');
+const fluxTomlTemplate = process.env.FLUX_TOML_TEMPLATE || path.resolve(__dirname, '../../examples/flux.toml');
 
 export interface Job {
         dataset: string;

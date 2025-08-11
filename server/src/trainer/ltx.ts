@@ -9,14 +9,14 @@ const modelsDir = process.env.MODEL_DIR || path.resolve(__dirname, '../../../mod
 const diffusionPipeDir = process.env.DIFFUSION_PIPE_DIR || path.resolve(__dirname, '../../../../diffusion-pipe/');
 const tempDir = process.env.TEMP_DIR || path.resolve(__dirname, '../../temp/');
 const datasetTomlTemplate = process.env.DATASET_TOML_TEMPLATE || path.resolve(__dirname, '../../examples/dataset.toml');
-const sdxlTomlTemplate = process.env.FLUX_TOML_TEMPLATE || path.resolve(__dirname, '../../examples/sdxl.toml');
+const ltxTomlTemplate = process.env.LTX_TOML_TEMPLATE || path.resolve(__dirname, '../../examples/ltx.toml');
 
 export interface Job {
         dataset: string;
         modelType: string
 }
 
-export async function trainSdxl(job: Job) {
+export async function trainLtx(job: Job) {
         const datasetPath = path.resolve(datasetDir, job.dataset, 'completed');
 
         // --- Dataset TOML ---
@@ -35,7 +35,7 @@ export async function trainSdxl(job: Job) {
         // --- Model TOML ---
         // TODO: Update this so that it detects whether there are multiple GPUS or not and change the spawned command accordingly
         let modelTemplatePath: string;
-        modelTemplatePath = sdxlTomlTemplate;
+        modelTemplatePath = ltxTomlTemplate;
         const modelTomlString = fs.readFileSync(modelTemplatePath, 'utf-8');
         const modelConfig = TOML.parse(modelTomlString) as unknown as BaseConfig<LTXConfig>;
         const outputDir = path.resolve(datasetDir, job.dataset, 'output');
@@ -45,6 +45,7 @@ export async function trainSdxl(job: Job) {
         const diffusersPath = path.resolve(modelsDir, ''); // TODO: This is for sure broken. I need to figure out what is specifically suppose to go here and likely needs to be placed into models/ltx
         modelConfig.model.diffusers_path = diffusersPath;
         const singleFileString = path.resolve(modelsDir, ''); //TODO: This is for sure broken. I need to figure out what is 
+        modelConfig.model.single_file_path = singleFileString;
         const modelConfigOutPath = path.resolve(tempDir, `${job.dataset}.toml`);
         const updatedModelTomlString = TOML.stringify(modelConfig as any);
         fs.writeFileSync(modelConfigOutPath, updatedModelTomlString);
