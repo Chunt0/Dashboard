@@ -1,67 +1,38 @@
 import HealthIndicator from "./HealthIndicator";
 import { NavLink } from "react-router-dom";
-import { FaAccessibleIcon } from 'react-icons/fa'; // Importing an icon
+import { FaAccessibleIcon } from "react-icons/fa";
 
 function Navbar() {
-        return (
-                <nav className="flex items-center justify-between bg-black p-4">
-                        <div className="flex gap-8">
+        const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+                `rounded-full px-4 py-2 text-sm font-semibold transition ${
+                        isActive
+                                ? "bg-slate-900 text-white shadow-sm"
+                                : "text-slate-600 hover:bg-slate-900/5 hover:text-slate-900"
+                }`;
 
-                                <NavLink
-                                        to="/"
-                                        style={({ isActive }) => ({
-                                                color: isActive ? "#fff" : "#aaa",
-                                                marginRight: "2rem",
-                                                textDecoration: "none",
-                                                fontWeight: isActive ? "bold" : "normal"
-                                        })}
-                                >
-                                        <FaAccessibleIcon /> {/* Using an icon instead of text */}
+        return (
+                <nav className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/75 backdrop-blur">
+                        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-10">
+                                <NavLink to="/" className="flex items-center gap-3 text-slate-900">
+                                        <span className="grid h-10 w-10 place-items-center rounded-xl bg-teal-500/10 text-teal-700">
+                                                <FaAccessibleIcon className="text-lg" />
+                                        </span>
+                                        <span className="text-lg font-semibold tracking-tight">Studio Dashboard</span>
                                 </NavLink>
-                                <NavLink
-                                        to="/upload"
-                                        style={({ isActive }) => ({
-                                                color: isActive ? "#fff" : "#aaa",
-                                                marginRight: "2rem",
-                                                textDecoration: "none",
-                                                fontWeight: isActive ? "bold" : "normal"
-                                        })}
-                                >
-                                        Upload
-                                </NavLink>
-                                <NavLink
-                                        to="/qa"
-                                        style={({ isActive }) => ({
-                                                color: isActive ? "#fff" : "#aaa",
-                                                marginRight: "2rem",
-                                                textDecoration: "none",
-                                                fontWeight: isActive ? "bold" : "normal"
-                                        })}
-                                >
-                                        QA
-                                </NavLink>
-                                <NavLink
-                                        to="/train"
-                                        style={({ isActive }) => ({
-                                                color: isActive ? "#fff" : "#aaa",
-                                                marginRight: "2rem",
-                                                textDecoration: "none",
-                                                fontWeight: isActive ? "bold" : "normal"
-                                        })}
-                                >
-                                        Train
-                                </NavLink>
-                                <NavLink
-                                        to="/generate"
-                                        style={({ isActive }) => ({
-                                                color: isActive ? "#fff" : "#aaa",
-                                                marginRight: "2rem",
-                                                textDecoration: "none",
-                                                fontWeight: isActive ? "bold" : "normal"
-                                        })}
-                                >
-                                        Generate
-                                </NavLink>
+                                <div className="flex flex-1 items-center justify-center gap-2">
+                                        <NavLink to="/upload" className={navLinkClass}>
+                                                Upload
+                                        </NavLink>
+                                        <NavLink to="/qa" className={navLinkClass}>
+                                                QA
+                                        </NavLink>
+                                        <NavLink to="/train" className={navLinkClass}>
+                                                Train
+                                        </NavLink>
+                                        <NavLink to="/generate" className={navLinkClass}>
+                                                Generate
+                                        </NavLink>
+                                </div>
                                 <HealthIndicator />
                         </div>
                 </nav>

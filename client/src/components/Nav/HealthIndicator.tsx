@@ -29,19 +29,21 @@ function HealthIndicator() {
     };
   }, []);
 
-  let color = healthy === null ? "#cccccc" : healthy ? "#24c150" : "#d32d27";
-  let tooltip = healthy === null ? "Checking server..." : healthy ? "Server healthy" : "Server unreachable";
+  const color = healthy === null ? "#94a3b8" : healthy ? "#16a34a" : "#dc2626";
+  const tooltip = healthy === null ? "Checking server..." : healthy ? "Server healthy" : "Server unreachable";
+  const label = healthy === null ? "Checking" : healthy ? "Healthy" : "Offline";
 
   return (
-    <div className="flex top-4 right-60 z-50"> {/* Tailwind classes for positioning */}
+    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600">
       <span
         title={tooltip}
-        className="inline-block w-4 h-4 rounded-full" // Tailwind classes for styling
+        className="inline-block h-2.5 w-2.5 rounded-full"
         style={{
           background: color,
-          boxShadow: "0 0 4px rgba(0,0,0,0.2)",
+          boxShadow: "0 0 6px rgba(0,0,0,0.15)",
         }}
       />
+      <span>{label}</span>
     </div>
   );
 

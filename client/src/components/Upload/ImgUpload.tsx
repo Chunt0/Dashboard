@@ -140,35 +140,43 @@ const Image: React.FC = () => {
 
         return (
                 <div
-                        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-purple-500 to-blue-500 p-8"
+                        className="mx-auto flex min-h-[70vh] w-full max-w-4xl flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white/80 p-8 text-center shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
                 >
-                        <h2 className="animate-bounce text-4xl font-extrabold text-white mb-6">Image Upload</h2>
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-700">Image Upload</p>
+                        <h2 className="display mt-3 text-3xl text-slate-900 sm:text-4xl">Drop folders to start labeling.</h2>
+                        <p className="mt-3 max-w-xl text-sm text-slate-600">
+                                Keep folder structure intact and send image batches for automatic preparation.
+                        </p>
 
                         {/* Drag & Drop Zone */}
                         <div
-                                className={`animate-pulse w-full max-w-md p-6 mb-6 border-4 border-white border-dashed rounded-lg bg-white/20 text-white text-center cursor-pointer hover:bg-white/30 ${isLocked ? 'opacity-50' : ''}`}
+                                className={`mt-6 w-full max-w-2xl rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-white ${
+                                        isLocked ? 'opacity-60' : ''
+                                }`}
                                 onDrop={handleDrop}
                                 onDragOver={handleDragOver}
                         >
-                                {isLocked ? 'Folder Loaded' : 'Drag and drop folders/files here'}
+                                {isLocked ? 'Folder loaded and ready to upload.' : 'Drag and drop folders/files here'}
                         </div>
 
                         {!isUploading && isLocked && (
                                 <button
                                         onClick={handleUpload}
-                                        className="bg-white text-purple-600 font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-purple-600 hover:text-white transition"
+                                        className="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                                 >
-                                        Click to Upload...
+                                        Start upload
                                 </button>
                         )}
-                        <br />
-                        <p className="text-4xl font-extrabold text-white mb-6">{isLocked ? logMessage : 'Drag and drop your image files!'}</p>
-                        <br />
+                        <p className="mt-6 text-sm font-semibold text-slate-600">
+                                {isLocked ? logMessage : 'Drag and drop your image files to begin.'}
+                        </p>
                         {isUploading && (
-                                <div className="w-full bg-gray-200 rounded-full shadow-inner h-4 overflow-hidden">
-                                        <div className='h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-300 ease-in-out rounded-full' style={{ width: `${uploadProgress}%` }}
+                                <div className="mt-6 w-full rounded-full bg-slate-200 shadow-inner">
+                                        <div
+                                                className="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-300 ease-in-out"
+                                                style={{ width: `${uploadProgress}%` }}
                                         />
                                 </div>
                         )}

@@ -10,14 +10,15 @@ const Generate: React.FC = () => {
     };
 
     return (
-        <div>
+        <div className="mx-auto w-full max-w-6xl">
             <GenerateNavBar onWorkflowSelect={handleWorkflowSelect} />
             {selectedWorkflow ? (
                 <WorkflowView workflowName={selectedWorkflow} />
             ) : (
-                <div className="p-4">
-                    <h1 className="text-2xl font-bold mb-4">Image and Video Generation</h1>
-                    <p>Select a workflow to begin.</p>
+                <div className="mt-8 rounded-3xl border border-slate-200/80 bg-white/80 p-10 text-center shadow-[0_20px_50px_rgba(15,23,42,0.08)] fade-up">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Generate</p>
+                    <h1 className="display mt-3 text-3xl text-slate-900 sm:text-4xl">Image and video generation, simplified.</h1>
+                    <p className="mt-4 text-base text-slate-600">Select a workflow to configure prompts and start creating.</p>
                 </div>
             )}
         </div>

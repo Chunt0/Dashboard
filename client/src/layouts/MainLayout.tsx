@@ -22,11 +22,11 @@ const Layout: React.FC = () => {
         const showTrainingNavbar: boolean = ['/train', '/train/sdxl', '/train/flux', '/train/wan', '/train/hunyuan', '/train/ltx', '/train/cosmos', '/train/lumina', '/train/chroma', '/train/hidream'].includes(location.pathname)
 
         return (
-                <div className="flex flex-col min-h-screen">
+                <div className="flex min-h-screen flex-col text-slate-900">
                         <Navbar />
                         {showUploadNavbar && <UploadNavbar />}
                         {showTrainingNavbar && <TrainingNavbar />}
-                        <div className="flex-1">
+                        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-10">
                                 <Routes>
                                         <Route path="/" element={<Splash />} />
                                         <Route path="/upload/*" element={<Uploading />} />
@@ -39,10 +39,9 @@ const Layout: React.FC = () => {
                                         <Route path="/train/wan" element={<TrainWAN />} />
                                         <Route path="/generate" element={<Generate />} />
                                 </Routes>
-                        </div>
+                        </main>
                 </div>
         );
 }
 
 export default Layout;
-

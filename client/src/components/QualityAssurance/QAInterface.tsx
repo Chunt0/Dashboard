@@ -134,100 +134,117 @@ const QAInterface: React.FC = () => {
         };
 
         return (
-                <>
-                        <div className="p-6 bg-gradient-to-r from-red-800 to-amber-800 flex">
-                                <h4 className="animate-pulse text-xl font-bold text-purple-800 shadow-lg p-2 rounded-lg bg-gradient-to-r from-green-400 to-purple-600 text-white">
-                                        Select dataset for QA
-                                </h4>
-                                <select
-                                        className="p-2 m-2 border border-gray-300 rounded bg-gray-100 text-purple-600 font-bold"
-                                        onChange={handleFolderSelection}
-                                >
-                                        <option value="">Select Folder</option>
-                                        {folders.map((folderName) => (
-                                                <option key={folderName} value={folderName}>
-                                                        {folderName}
-                                                </option>
-                                        ))}
-                                </select>
-                                <button
-                                        onClick={handleLoadSelection}
-                                        className="w-full px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition"
-                                >
-                                        <h2 className="animate-bounce">Load Dataset</h2>
-                                </button>
-                        </div>
-                        <div className="flex bg-gradient-to-r from-red-800 to-amber-800 space-y-40 items-center">
-                                {allCompleted && (
-                                        <div className="flex flex-col items-center justify-center w-full">
-                                                <div className="text-center mb-4">
-                                                        <h2 className="text-2xl font-bold text-white animate-pulse">
-                                                                🎉 All files completed! 🎉
-                                                        </h2>
-                                                        <p className="text-white">Great work! All media files have been processed.</p>
-                                                </div>
+                <div className="mx-auto w-full max-w-6xl">
+                        <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] sm:p-8">
+                                <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                                        <div>
+                                                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-700">Quality Assurance</p>
+                                                <h2 className="display mt-3 text-3xl text-slate-900 sm:text-4xl">Review labels with confidence.</h2>
+                                                <p className="mt-2 max-w-xl text-sm text-slate-600">
+                                                        Select a dataset to begin auditing labels and keeping your training data clean.
+                                                </p>
                                         </div>
-                                )}
-                                {!allCompleted && (
-                                        <div className="flex flex-col items-center">
-                                                <textarea
-                                                        ref={textareaRef}
-                                                        onKeyDown={handleKeyDown}
-                                                        value={label}
-                                                        onChange={(e) => setLabel(e.target.value)}
-                                                        placeholder="Label"
-                                                        className="p-2 m-5 border bg-white border-gray-300 rounded w-200 h-24 resize-none font-bold px-4" // Multi-line box with fixed size
-                                                ></textarea>
-                                                <div className="flex items-center space-x-2 text-xl">
-                                                        <h1 className='font-extrabold'> Remove? </h1>
-                                                        <input
-                                                                type="checkbox"
-                                                                id="removeCheckbox"
-                                                                className="form-checkbox m-5"
-                                                                checked={removeMedia}
-                                                                onChange={handleCheckboxChange}
-                                                        />
-                                                </div>
-                                                <button
-                                                        ref={buttonRef}
-                                                        onClick={handleSubmit}
-                                                        className="w-[600px] px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition"
+                                        <div className="flex flex-wrap items-center gap-3">
+                                                <select
+                                                        value={folder}
+                                                        className="min-w-[220px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                                                        onChange={handleFolderSelection}
                                                 >
-                                                        <h2>Next</h2>
-                                                </button>
-                                                <br />
+                                                        <option value="">Select Folder</option>
+                                                        {folders.map((folderName) => (
+                                                                <option key={folderName} value={folderName}>
+                                                                        {folderName}
+                                                                </option>
+                                                        ))}
+                                                </select>
                                                 <button
-                                                        onClick={handleCompleteAll}
+                                                        onClick={handleLoadSelection}
                                                         disabled={!folder}
-                                                        className={`w-[600px] px-4 bg-white text-purple-600 font-bold py-3 rounded-lg shadow-lg hover:bg-gradient-to-r from-purple-600 to-green-400 hover:text-white transition ${!folder ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                                        <h2>Accept All Labels</h2>
+                                                        className="rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                        Load Dataset
                                                 </button>
-                                                {remainingFiles > 0 && (
-                                                        <div className="mt-4 text-center">
-                                                                <p className="text-white font-bold">
-                                                                        {remainingFiles} file{remainingFiles !== 1 ? 's' : ''} remaining
-                                                                </p>
+                                        </div>
+                                </div>
+                        </div>
+
+                        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+                                <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm">
+                                        {allCompleted ? (
+                                                <div className="flex flex-col items-center justify-center gap-3 text-center">
+                                                        <div className="rounded-full bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-700">
+                                                                All files completed
                                                         </div>
-                                                )}
-                                        </div>
-                                )}
-                                {!allCompleted && (
-                                        <div className="m-10">
-                                                {mediaSrc && mediaType === 'video' && (
-                                                        <video controls width='1280' key={mediaSrc}>
-                                                                <source src={mediaSrc} type="video/mp4" />
-                                                        </video>
-                                                )}
-                                                {mediaSrc && mediaType === 'image' && (
-                                                        <img key={mediaSrc} src={mediaSrc} alt="Loaded media" width="800" />
-                                                )}
-                                        </div>
-                                )}
-                        </div >
-                </>
+                                                        <h3 className="display text-2xl text-slate-900">Great work!</h3>
+                                                        <p className="text-sm text-slate-600">All media files have been processed.</p>
+                                                </div>
+                                        ) : (
+                                                <div className="flex flex-col gap-5">
+                                                        <div>
+                                                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Label</label>
+                                                                <textarea
+                                                                        ref={textareaRef}
+                                                                        onKeyDown={handleKeyDown}
+                                                                        value={label}
+                                                                        onChange={(e) => setLabel(e.target.value)}
+                                                                        placeholder="Describe the scene or action"
+                                                                        className="mt-2 min-h-[140px] w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                                                                />
+                                                        </div>
+                                                        <div className="flex items-center gap-3 text-sm font-semibold text-slate-700">
+                                                                <input
+                                                                        type="checkbox"
+                                                                        id="removeCheckbox"
+                                                                        className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500/40"
+                                                                        checked={removeMedia}
+                                                                        onChange={handleCheckboxChange}
+                                                                />
+                                                                <label htmlFor="removeCheckbox">Mark for removal</label>
+                                                        </div>
+                                                        <div className="flex flex-col gap-3">
+                                                                <button
+                                                                        ref={buttonRef}
+                                                                        onClick={handleSubmit}
+                                                                        className="w-full rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                                                                >
+                                                                        Next item
+                                                                </button>
+                                                                <button
+                                                                        onClick={handleCompleteAll}
+                                                                        disabled={!folder}
+                                                                        className="w-full rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                >
+                                                                        Accept all labels
+                                                                </button>
+                                                        </div>
+                                                        {remainingFiles > 0 && (
+                                                                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600">
+                                                                        {remainingFiles} file{remainingFiles !== 1 ? 's' : ''} remaining
+                                                                </div>
+                                                        )}
+                                                </div>
+                                        )}
+                                </div>
+
+                                <div className="rounded-3xl border border-slate-200/80 bg-slate-900/90 p-4 text-white shadow-sm">
+                                        {!allCompleted && mediaSrc && mediaType === 'video' && (
+                                                <video controls className="w-full rounded-2xl" key={mediaSrc}>
+                                                        <source src={mediaSrc} type="video/mp4" />
+                                                </video>
+                                        )}
+                                        {!allCompleted && mediaSrc && mediaType === 'image' && (
+                                                <img key={mediaSrc} src={mediaSrc} alt="Loaded media" className="w-full rounded-2xl" />
+                                        )}
+                                        {!allCompleted && !mediaSrc && (
+                                                <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-sm text-slate-200">
+                                                        Media preview will appear here.
+                                                </div>
+                                        )}
+                                </div>
+                        </div>
+                </div>
         );
 
 };
 
 export default QAInterface;
-
