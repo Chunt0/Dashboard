@@ -399,6 +399,220 @@ Since this is an **internal-only tool for personal use**, a simple **API Key aut
 
 ---
 
+## 🎯 NEW FEATURE: LoRA Documentation Generator
+
+### Overview
+After QA is complete, automatically generate comprehensive documentation for trained LoRA models by analyzing training labels and identifying trigger words and common patterns. This helps document what the LoRA has learned and how to use it effectively.
+
+### Feature Components
+
+- [ ] **Label Analysis Service**
+  - **File**: `/server/src/services/loraDocGenerator.ts`
+  - **Purpose**: Analyze all training labels from a completed dataset
+  - **Functionality**:
+    1. Read all `.txt` label files from the trained dataset directory
+    2. Parse comma-separated label text
+    3. Extract individual tokens/phrases
+    4. Count frequency of each token/phrase
+    5. Identify patterns and trigger words
+  - **Output**: Structured analysis object with token frequencies and patterns
+  - **Timeline**: Week 2-3 (after QA feature is complete)
+
+- [ ] **Trigger Word Detection**
+  - **File**: `/server/src/services/loraDocGenerator.ts` (triggerWordDetector)
+  - **Purpose**: Identify the most effective trigger words for the LoRA
+  - **Algorithm**:
+    1. Extract trigger word candidates (tokens that appear in 70%+ of labels)
+    2. Use Ollama to validate if words are meaningful descriptors
+    3. Rank by frequency and semantic importance
+    4. Return top 5-10 recommended trigger words
+  - **Implementation**:
+    ```typescript
+    interface TriggerWord {
+      word: string;
+      frequency: number;
+      percentageOfSamples: number;
+      semanticScore?: number; // From Ollama analysis
+    }
+    ```
+  - **Timeline**: Week 3
+
+- [ ] **Common Pattern Detection**
+  - **File**: `/server/src/services/loraDocGenerator.ts` (patternDetector)
+  - **Purpose**: Identify common themes, styles, and characteristics
+  - **Methods**:
+    1. **Frequency Analysis**: Find most common adjectives, nouns, style descriptors
+    2. **Semantic Clustering**: Use Ollama to group similar concepts
+    3. **Category Extraction**: Identify categories (style, subject, mood, quality)
+  - **Implementation** uses Ollama prompt:
+    ```
+    "Analyze these training labels and identify:
+    1. Top 5 common styles or artistic directions
+    2. Top 5 most common subjects or objects
+    3. Top 5 mood/atmosphere descriptors
+    4. Common camera/composition directions
+    Return as structured JSON with categories and frequencies"
+    ```
+  - **Timeline**: Week 3
+
+- [ ] **Documentation Generation**
+  - **File**: `/server/src/routes/docGeneration.ts`
+  - **Endpoint**: `POST /api/lora/:datasetName/generate-docs`
+  - **Process**:
+    1. Call label analysis service to get token frequencies
+    2. Call trigger word detection to get recommended trigger words
+    3. Call pattern detection to get common themes
+    4. Generate markdown documentation from results
+    5. Save to `/server/docs/lora-{datasetName}.md`
+    6. Return generated doc to frontend
+  - **Timeline**: Week 3
+
+- [ ] **Documentation Template Structure**
+  - **Output File**: `/docs/lora-{datasetName}.md`
+  - **Contents**:
+    ```markdown
+    # LoRA Documentation: {DatasetName}
+
+    ## Overview
+    Generated analysis from {X} training samples
+
+    ## Trigger Words
+    Recommended trigger words to activate this LoRA:
+    - {word1} (appears in {X}% of samples)
+    - {word2} (appears in {X}% of samples)
+    - ...
+
+    ## Common Styles
+    Most common artistic directions in training data:
+    - {style1} ({count} occurrences, {percentage}%)
+    - {style2} ({count} occurrences, {percentage}%)
+
+    ## Common Subjects
+    Most frequently depicted subjects:
+    - {subject1} ({count} occurrences, {percentage}%)
+    - {subject2} ({count} occurrences, {percentage}%)
+
+    ## Mood & Atmosphere
+    Common mood and lighting descriptors:
+    - {mood1} ({count} occurrences)
+    - {mood2} ({count} occurrences)
+
+    ## Composition & Camera Directions
+    Common framing and movement instructions:
+    - {direction1} ({count} occurrences)
+    - {direction2} ({count} occurrences)
+
+    ## Quality Indicators
+    Quality/detail descriptors most frequent:
+    - {quality1} ({count} occurrences)
+    - {quality2} ({count} occurrences)
+
+    ## Analysis Metadata
+    - Total samples analyzed: {X}
+    - Generated at: {timestamp}
+    - Analysis method: Token frequency + Ollama semantic analysis
+    ```
+  - **Timeline**: Week 3
+
+- [ ] **Frontend Integration**
+  - **File**: `/client/src/components/QualityAssurance/DocumentationGenerator.tsx`
+  - **Features**:
+    1. Add button to QA interface: "Generate LoRA Docs"
+    2. Show loading state while analyzing
+    3. Display generated documentation in modal or new page
+    4. Option to preview/download markdown
+    5. Optionally save to server file system
+  - **Timeline**: Week 3-4
+
+- [ ] **Ollama Integration for Label Analysis**
+  - **Purpose**: Use local Ollama models to enhance analysis
+  - **Use Cases**:
+    1. **Semantic validation**: Confirm extracted words are meaningful
+    2. **Category classification**: Classify tokens into semantic categories
+    3. **Pattern detection**: Identify non-obvious patterns in labels
+  - **Prompts** to create:
+    ```typescript
+    // Classify tokens into categories
+    "Classify each of these words/phrases into categories: 
+     style, subject, mood, quality, composition, action.
+     Return as JSON object."
+    
+    // Semantic importance scoring
+    "Rate the semantic importance of these words for 
+     describing image/video generation: {words}
+     Return as JSON with importance scores 0-1."
+    
+    // Pattern detection
+    "What are the common themes and patterns in these 
+     descriptive labels? Return as structured analysis."
+    ```
+  - **Timeline**: Week 3
+
+### Implementation Plan
+
+**Phase 1: Core Analysis (Week 2)**
+1. Create label analysis service (read & parse .txt files)
+2. Implement frequency analysis algorithm
+3. Extract and count tokens
+4. Build data structures for results
+
+**Phase 2: Ollama Enhancement (Week 3)**
+1. Create Ollama prompts for semantic analysis
+2. Implement trigger word detection with Ollama validation
+3. Implement pattern detection with Ollama
+4. Create documentation template generator
+
+**Phase 3: Integration (Week 3-4)**
+1. Create API endpoint for doc generation
+2. Add frontend UI for triggering generation
+3. Display results in modal/preview
+4. Add download/save functionality
+5. Test with sample datasets
+
+### Data Flow Diagram
+```
+QA Complete → Generate Docs Button
+    ↓
+Fetch all .txt labels from dataset
+    ↓
+Parse labels → Extract tokens → Count frequencies
+    ↓
+Analyze patterns with Ollama (optional)
+    ↓
+Generate markdown documentation
+    ↓
+Display in frontend + Save to /docs/
+```
+
+### Example Output Analysis
+```json
+{
+  "totalSamples": 150,
+  "triggerWords": [
+    { "word": "portrait", "frequency": 142, "percentage": 94.7 },
+    { "word": "candlelight", "frequency": 128, "percentage": 85.3 },
+    { "word": "cinematic", "frequency": 115, "percentage": 76.7 }
+  ],
+  "commonStyles": [
+    { "style": "cinematic lighting", "count": 89, "percentage": 59.3 },
+    { "style": "dark moody", "count": 67, "percentage": 44.7 }
+  ],
+  "commonSubjects": [
+    { "subject": "woman", "count": 142, "percentage": 94.7 },
+    { "subject": "face", "count": 138, "percentage": 92.0 }
+  ]
+}
+```
+
+### Technical Considerations
+1. **Performance**: Analyzing 100+ labels should be < 5 seconds without Ollama
+2. **Scalability**: Should handle datasets with 1000+ samples
+3. **Ollama Optional**: Core analysis works without Ollama, enhanced analysis with it
+4. **Caching**: Cache analysis results to avoid re-processing
+5. **File Management**: Safely store generated docs in `/docs/` directory
+
+---
+
 ## 📚 TESTING & DOCUMENTATION (Critical for Production)
 
 ### Testing Infrastructure
