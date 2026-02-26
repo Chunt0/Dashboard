@@ -21,8 +21,8 @@ const Layout: React.FC = () => {
         const showUploadNavbar: boolean = ['/upload', '/upload/video', '/upload/image'].includes(location.pathname);
         const showTrainingNavbar: boolean = ['/train', '/train/sdxl', '/train/flux', '/train/wan', '/train/hunyuan', '/train/ltx', '/train/cosmos', '/train/lumina', '/train/chroma', '/train/hidream'].includes(location.pathname)
 
-        return (
-                <div className="flex min-h-screen flex-col text-slate-900">
+		return (
+			<div className="flex min-h-screen flex-col text-slate-100">
                         <Navbar />
                         {showUploadNavbar && <UploadNavbar />}
                         {showTrainingNavbar && <TrainingNavbar />}

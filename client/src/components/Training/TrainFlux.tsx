@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fetchWithAuth } from '../../utils/api';
 
 const GET_COMPLETED_DATASETS_ENDPOINT = import.meta.env.VITE_GET_COMPLETED_DATASETS_ENDPOINT;
 
@@ -12,7 +13,7 @@ const TrainFlux: React.FC = () => {
 
         useEffect(() => {
                 const fetchDatasets = async () => {
-                        const response = await fetch(GET_COMPLETED_DATASETS_ENDPOINT);
+			const response = await fetchWithAuth(GET_COMPLETED_DATASETS_ENDPOINT);
                         const data = await response.json();
                         setDatasets(data);
                 };
@@ -25,10 +26,10 @@ const TrainFlux: React.FC = () => {
 
         const handleTrainFluxModel = async () => {
                 try {
-                        const response = await fetch(TRAIN_FLUX_MODEL_ENDPOINT, {
-                                method: 'POST',
-                                headers: {
-                                        'Content-Type': 'application/json',
+			const response = await fetchWithAuth(TRAIN_FLUX_MODEL_ENDPOINT, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
                                 },
                                 body: JSON.stringify(({ dataset })),
                         });
@@ -39,14 +40,14 @@ const TrainFlux: React.FC = () => {
                 }
         };
 
-        return (
-                <div className="mx-auto flex min-h-[70vh] w-full max-w-xl items-center justify-center">
-                        <div className="w-full rounded-3xl border border-slate-200/80 bg-white/80 p-8 text-center shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
-                                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-700">Flux Training</p>
-                                <h2 className="display mt-3 text-3xl text-slate-900">Select a dataset to train.</h2>
-                                <p className="mt-3 text-sm text-slate-600">Launch a Flux LoRA run from a completed dataset.</p>
+	return (
+		<div className="mx-auto flex min-h-[70vh] w-full max-w-xl items-center justify-center">
+			<div className="w-full border border-slate-800 bg-slate-950 p-8 text-center">
+				<p className="text-xs font-medium text-slate-400">Flux Training</p>
+				<h2 className="mt-3 text-2xl font-semibold text-slate-100">Select a dataset to train.</h2>
+				<p className="mt-3 text-sm text-slate-300">Launch a Flux LoRA run from a completed dataset.</p>
                                 <select
-                                        className="mt-6 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+					className="mt-6 w-full border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-500"
                                         value={dataset}
                                         onChange={handleFolderSelection}
                                 >
@@ -57,12 +58,12 @@ const TrainFlux: React.FC = () => {
                                 </select>
                                 <button
                                         onClick={handleTrainFluxModel}
-                                        className="mt-4 w-full rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+					className="mt-4 w-full border border-slate-700 bg-slate-900 px-6 py-2.5 text-sm font-medium text-slate-100 transition hover:bg-slate-800"
                                 >
                                         Train Flux
                                 </button>
                                 {logMessage && (
-                                        <p className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+					<p className="mt-6 border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-200">
                                                 {logMessage}
                                         </p>
                                 )}

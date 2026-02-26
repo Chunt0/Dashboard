@@ -3,6 +3,7 @@ import cors from 'cors';
 import routes from './routes';
 import dotenv from 'dotenv';
 import { getRedisClient } from './utils/redisClient';
+import { apiKeyAuth } from './middleware/apiKeyAuth';
 
 dotenv.config();
 
@@ -10,11 +11,18 @@ const app = express();
 const PORT = process.env.PORT || 3003;
 
 app.use(express.json());
+
+const corsOrigins = (process.env.CORS_ORIGIN || '')
+	.split(',')
+	.map(origin => origin.trim())
+	.filter(Boolean);
+
 app.use(cors({
-        origin: 'https://dashboard.putty-ai.com',
-        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE'
+	origin: corsOrigins.length > 0 ? corsOrigins : true,
+	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE'
 }));
 
+app.use('/api', apiKeyAuth);
 app.use('/api', routes);
 
 let server: ReturnType<typeof app.listen>;

@@ -2,6 +2,7 @@ import fs from 'fs';
 import mime from 'mime-types';
 import path from 'path';
 import { Router, Request, Response } from 'express';
+import { isNonEmptyString, isSafeFileName, isSafePathSegment } from '../utils/validation';
 
 const router = Router();
 const datasetsDir = process.env.DATA_DIR || path.resolve(__dirname, '../../../datasets'); // Define dataset directory
@@ -20,34 +21,48 @@ router.get('/folders', (req: Request, res: Response): void => {
 });
 
 
-router.post('/load', (req: Request, res: Response): void => {
-        const { folder } = req.body;
-        if (folder === '') {
-                return res.status(400).send(`request body:${req.body}`) as unknown as void;
+router.post('/load', async (req: Request, res: Response): Promise<void> => {
+	const { folder } = req.body;
+	if (!isSafePathSegment(folder)) {
+		res.status(400).json({ error: 'Invalid folder.' });
+		return;
+	}
 
-        }
-        const dataDir = path.join(datasetsDir, folder);
+	const dataDir = path.join(datasetsDir, folder.trim());
 
-        const files = fs.readdirSync(dataDir);
-        const mediaFile = files.find(file => file.endsWith('.mp4') || file.endsWith('.png'));
-        const textFile = mediaFile ? mediaFile.replace(/\.(mp4|png)$/, '.txt') : null;
-        const textFilePath = textFile ? path.join(dataDir, textFile) : null;
-        let label = null;
-        if (textFilePath) {
-                // Read the text file into a string synchronously
-                label = fs.readFileSync(textFilePath, 'utf8');
-        }
+	try {
+		const files = await fs.promises.readdir(dataDir);
+		const mediaFile = files.find(file => file.endsWith('.mp4') || file.endsWith('.png')) || null;
+		const textFile = mediaFile ? mediaFile.replace(/\.(mp4|png)$/, '.txt') : null;
+		const textFilePath = textFile ? path.join(dataDir, textFile) : null;
+		let label = null;
+		if (textFilePath) {
+			label = await fs.promises.readFile(textFilePath, 'utf8');
+		}
 
-        res.json({ status: 'ok', label, mediaFile }); // Send only media file if text file doesn't exist
-
+		res.json({ status: 'ok', label, mediaFile });
+	} catch (err) {
+		console.error('Failed to load QA dataset:', err);
+		res.status(404).json({ error: 'Folder not found.' });
+	}
 });
 
 router.get('/media/:folderId/:mediaId', async (req: Request, res: Response): Promise<void> => {
-        const { folderId, mediaId } = req.params;
-        const mediaFilePath = path.normalize(path.join(datasetsDir, folderId, mediaId));
-        if (!mediaFilePath.startsWith(path.resolve(datasetsDir))) {
-                res.status(403).send('Forbidden');
-                return;
+	const { folderId, mediaId } = req.params;
+	if (!isSafePathSegment(folderId) || !isSafeFileName(mediaId)) {
+		res.status(400).send('Invalid media request');
+		return;
+	}
+
+	if (!mediaId.endsWith('.mp4') && !mediaId.endsWith('.png')) {
+		res.status(400).send('Invalid media type');
+		return;
+	}
+
+	const mediaFilePath = path.normalize(path.join(datasetsDir, folderId, mediaId));
+	if (!mediaFilePath.startsWith(path.resolve(datasetsDir))) {
+		res.status(403).send('Forbidden');
+		return;
         }
         if (!fs.existsSync(mediaFilePath)) {
                 res.status(404).send('Media Not Found');
@@ -91,58 +106,81 @@ router.get('/media/:folderId/:mediaId', async (req: Request, res: Response): Pro
                 res.setHeader('Accept-Ranges', 'bytes');
                 res.setHeader('Content-Length', chunksize);
                 res.setHeader('Content-Type', mimeType);
-                res.setHeader('Cacher-Control', 'public, max-age=86400');
-                const stream = fs.createReadStream(mediaFilePath, { start, end });
-                stream.pipe(res);
-        } else {
-                res.status(200)
-                res.setHeader('Content-Length', fileSize);
-                res.setHeader('Content-Type', contentType);
-                res.setHeader('Cacher-Control', 'public, max-age=86400');
-                fs.createReadStream(mediaFilePath).pipe(res);
-        }
+		res.setHeader('Cache-Control', 'public, max-age=86400');
+		const stream = fs.createReadStream(mediaFilePath, { start, end });
+		stream.pipe(res);
+	} else {
+		res.status(200)
+		res.setHeader('Content-Length', fileSize);
+		res.setHeader('Content-Type', contentType);
+		res.setHeader('Cache-Control', 'public, max-age=86400');
+		fs.createReadStream(mediaFilePath).pipe(res);
+	}
 });
 
-router.post('/submit', (req: Request, res: Response): void => {
-        const { folder, mediaFile, label, removeMedia } = req.body;
-        // construct current media path
-        const currentMediaPath = path.join(datasetsDir, folder, mediaFile);
-        const destMediaPath = path.join(datasetsDir, folder, 'completed', mediaFile);
+router.post('/submit', async (req: Request, res: Response): Promise<void> => {
+	const { folder, mediaFile, label, removeMedia } = req.body;
+	if (!isSafePathSegment(folder) || !isSafeFileName(mediaFile)) {
+		res.status(400).json({ error: 'Invalid request.' });
+		return;
+	}
 
-        const textFile = mediaFile.replace(/\.(mp4|png)$/, '.txt');
-        const currentTextPath = path.join(datasetsDir, folder, textFile);
-        const destTextPath = path.join(datasetsDir, folder, 'completed', textFile);
+	if (!removeMedia && !isNonEmptyString(label)) {
+		res.status(400).json({ error: 'Label is required.' });
+		return;
+	}
 
-        if (removeMedia) {
-                fs.rmSync(currentMediaPath);
-                fs.rmSync(currentTextPath);
-                res.json({ status: 'ok', message: 'Media and corresponding text file has been deleted.' })
-        } else {
-                fs.cpSync(currentMediaPath, destMediaPath);
-                fs.writeFile(destTextPath, label, (err) => {
-                        if (err) {
-                                console.error('Error writing file:', err);
-                        }
-                });
-                fs.rmSync(currentMediaPath);
-                fs.rmSync(currentTextPath);
-                res.json({ status: 'ok', message: 'Media and corresponding text file have been updated and moved to the completed folder.' })
+	const normalizedFolder = folder.trim();
+	const normalizedMediaFile = mediaFile.trim();
+	const currentMediaPath = path.join(datasetsDir, normalizedFolder, normalizedMediaFile);
+	const destMediaPath = path.join(datasetsDir, normalizedFolder, 'completed', normalizedMediaFile);
 
-        }
+	const textFile = normalizedMediaFile.replace(/\.(mp4|png)$/, '.txt');
+	const currentTextPath = path.join(datasetsDir, normalizedFolder, textFile);
+	const destTextPath = path.join(datasetsDir, normalizedFolder, 'completed', textFile);
+
+	try {
+		if (removeMedia) {
+			await fs.promises.rm(currentMediaPath, { force: true });
+			await fs.promises.rm(currentTextPath, { force: true });
+			res.json({ status: 'ok', message: 'Media and corresponding text file has been deleted.' });
+			return;
+		}
+
+		await fs.promises.copyFile(currentMediaPath, destMediaPath);
+		await fs.promises.writeFile(destTextPath, label, 'utf8');
+		await fs.promises.rm(currentMediaPath, { force: true });
+		await fs.promises.rm(currentTextPath, { force: true });
+
+		res.json({
+			status: 'ok',
+			message: 'Media and corresponding text file have been updated and moved to the completed folder.'
+		});
+	} catch (err) {
+		console.error('Error processing QA submit:', err);
+		res.status(500).json({ error: 'Failed to update media.' });
+	}
 });
 
 router.get('/completion-status/:folder', (req: Request, res: Response): void => {
-        const { folder } = req.params;
-        const dataDir = path.join(datasetsDir, folder);
-        const completedDir = path.join(dataDir, 'completed');
+	const { folder } = req.params;
+	if (!isSafePathSegment(folder)) {
+		res.status(400).json({ error: 'Invalid folder.' });
+		return;
+	}
 
-        if (!fs.existsSync(dataDir)) {
-                res.status(404).json({ error: 'Folder not found' });
-        }
+	const dataDir = path.join(datasetsDir, folder.trim());
+	const completedDir = path.join(dataDir, 'completed');
 
-        if (!fs.existsSync(completedDir)) {
-                res.json({ allCompleted: false, remainingFiles: 0 });
-        }
+	if (!fs.existsSync(dataDir)) {
+		res.status(404).json({ error: 'Folder not found' });
+		return;
+	}
+
+	if (!fs.existsSync(completedDir)) {
+		res.json({ allCompleted: false, remainingFiles: 0 });
+		return;
+	}
 
         const mainFiles = fs.readdirSync(dataDir).filter(file =>
                 (file.endsWith('.mp4') || file.endsWith('.png')) &&
@@ -162,13 +200,13 @@ router.get('/completion-status/:folder', (req: Request, res: Response): void => 
 
 // i don't need to write a label file. just move all files mp4, png, txt and place them into completed
 router.post('/complete-all', async (req: Request, res: Response): Promise<void> => {
-        const { folder } = req.body;
-        if (!folder) {
-                res.status(400).json({ status: 'error', message: 'Folder not specified.' });
-                return;
-        }
+	const { folder } = req.body;
+	if (!isSafePathSegment(folder)) {
+		res.status(400).json({ status: 'error', message: 'Folder not specified.' });
+		return;
+	}
 
-        const folderPath = path.join(datasetsDir, folder);
+	const folderPath = path.join(datasetsDir, folder.trim());
         const completedFolderPath = path.join(folderPath, 'completed');
 
         try {
@@ -196,4 +234,3 @@ router.post('/complete-all', async (req: Request, res: Response): Promise<void> 
 });
 
 export default router;
-

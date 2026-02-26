@@ -4,9 +4,17 @@ services:
     ports:
       - 6379:6379
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   dashboard-backend:
     network_mode: host
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     image: dashboard-backend
     ports:
       - 3003:3003
@@ -21,10 +29,19 @@ services:
       REDIS_URL: redis://localhost:6379
     depends_on:
       - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   dashboard-worker:
     network_mode: host
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     image: dashboard-worker
+    command: ["node", "dist/trainer/queueWorker.js"]
     shm_size: 64g
     volumes:
       - ./datasets:/usr/src/app/datasets
@@ -52,5 +69,10 @@ services:
       dockerfile: client/Dockerfile
     image: dashboard
     ports:
-      - 5173:5173
+      - 5173:80
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

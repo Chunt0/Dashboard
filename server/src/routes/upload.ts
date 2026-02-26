@@ -4,12 +4,20 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import sharp from 'sharp';
+import {
+	isSafeFileName,
+	isSafePathSegment,
+	isSafeToken,
+	parsePositiveInt
+} from '../utils/validation';
 
 
-const NODE_ENV = process.env.NODE_ENV || 'development';
 const router = Router();
 
 const uploadDir = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
+const datasetsRoot = process.env.DATA_DIR || path.resolve(__dirname, '../../../datasets');
+const ollamaBaseUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+const ollamaChatUrl = `${ollamaBaseUrl.replace(/\/$/, '')}/api/chat`;
 
 if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -48,8 +56,8 @@ function ffprobePromise(videoPath: string): Promise<ffmpeg.FfprobeData> {
 }
 
 async function prepVid(videoPath: string, batchName: string): Promise<void> {
-        const outputRoot = NODE_ENV === "production" ? "/usr/src/app/datasets" : "../datasets";
-        const tgtDir = path.join(outputRoot, batchName);
+	const outputRoot = datasetsRoot;
+	const tgtDir = path.join(outputRoot, batchName);
         const completedDir = path.join(tgtDir, 'completed');
 
         fs.mkdirSync(tgtDir, { recursive: true });
@@ -104,23 +112,23 @@ async function prepVid(videoPath: string, batchName: string): Promise<void> {
                                         });
                         });
 
-                        const buffer = fs.readFileSync(thumbnailPath);
-                        const imgBase64 = buffer.toString('base64');
-                        await createLabelVideo(imgBase64, tgtDir, thumbnailPath, batchName);
-                        fs.unlinkSync(thumbnailPath);
+			const buffer = fs.readFileSync(thumbnailPath);
+			const imgBase64 = buffer.toString('base64');
+			await createLabelVideo(imgBase64, tgtDir, thumbnailPath, batchName);
+			await safeUnlink(thumbnailPath);
 
                         startTime += clipDuration;
                         clipIndex++;
                 }
-                fs.unlinkSync(videoPath);
+		await safeUnlink(videoPath);
         } catch (err) {
                 console.error('Error processing video:', err);
         }
 }
 
 async function prepImg(imagePath: string, batchName: string): Promise<void> {
-        const outputRoot = NODE_ENV === "production" ? "/usr/src/app/datasets" : "../datasets";
-        const tgtDir = path.join(outputRoot, batchName);
+	const outputRoot = datasetsRoot;
+	const tgtDir = path.join(outputRoot, batchName);
         const completedDir = path.join(tgtDir, 'completed');
 
         fs.mkdirSync(tgtDir, { recursive: true });
@@ -145,10 +153,10 @@ async function prepImg(imagePath: string, batchName: string): Promise<void> {
                 const width = metadata.width || 0;
                 const height = metadata.height || 0;
 
-                if (width < 512 || height < 512) {
-                        fs.unlinkSync(imagePath);
-                        return;
-                }
+		if (width < 512 || height < 512) {
+			await safeUnlink(imagePath);
+			return;
+		}
 
                 if (width < height) {
                         if (height > 1300) {
@@ -164,8 +172,8 @@ async function prepImg(imagePath: string, batchName: string): Promise<void> {
                         }
                 }
 
-                await image.png().toFile(tgtPath);
-                fs.unlinkSync(imagePath);
+		await image.png().toFile(tgtPath);
+		await safeUnlink(imagePath);
 
                 const buf = fs.readFileSync(tgtPath);
                 const imgBase64 = buf.toString('base64');
@@ -190,7 +198,7 @@ async function createLabelImage(imgBase64: string, tgtDir: string, tgtPath: stri
         };
 
 
-        const url = 'http://localhost:11434/api/chat';
+	const url = ollamaChatUrl;
 
 
         try {
@@ -229,7 +237,7 @@ async function createLabelVideo(imgBase64: string, tgtDir: string, tgtPath: stri
         };
 
 
-        const url = 'http://localhost:11434/api/chat';
+	const url = ollamaChatUrl;
 
 
         try {
@@ -258,12 +266,22 @@ router.post(
         '/videos',
         upload.single('chunk'),
         async (req: Request, res: Response): Promise<void> => {
-                const { fileId, chunkIndex, totalChunks, fileName, fileSize, batchName } = req.body;
-                const chunkFile = req.file;
+		const { fileId, chunkIndex, totalChunks, fileName, batchName } = req.body;
+		const chunkFile = req.file;
+		const parsedChunkIndex = parsePositiveInt(chunkIndex);
+		const parsedTotalChunks = parsePositiveInt(totalChunks);
 
-                if (!fileId || !chunkIndex || !fileName || !chunkFile || batchName === '') {
-                        return res.status(400).send(`request body:${req.body}`) as unknown as void;
-                }
+		if (!isSafeToken(fileId) || !isSafeFileName(fileName) || !isSafePathSegment(batchName)) {
+			res.status(400).json({ error: 'Invalid upload request.' });
+			return;
+		}
+
+		if (!chunkFile || parsedChunkIndex === null || parsedTotalChunks === null) {
+			res.status(400).json({ error: 'Invalid upload request.' });
+			return;
+		}
+
+		const normalizedBatchName = batchName.trim();
 
                 const folderPath = path.join(__dirname, '..', '..', 'uploads', 'temp', fileId);
                 if (!fs.existsSync(folderPath)) {
@@ -272,40 +290,45 @@ router.post(
                 const chunkPath = path.join(folderPath, `chunk_${chunkIndex}`);
                 fs.renameSync(chunkFile.path, chunkPath);
 
-                if (!uploadsMap[fileId]) {
-                        uploadsMap[fileId] = {
-                                totalChunks: parseInt(totalChunks),
-                                receivedChunks: 0,
-                                fileName,
-                                folderPath,
-                                batchName
-                        }
-                }
+		if (!uploadsMap[fileId]) {
+			uploadsMap[fileId] = {
+				totalChunks: parsedTotalChunks,
+				receivedChunks: 0,
+				fileName,
+				folderPath,
+				batchName: normalizedBatchName
+			}
+		}
 
                 uploadsMap[fileId].receivedChunks++;
 
-                if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
-                        const tempPath = path.join(__dirname, '..', '..', 'uploads', `${fileName}`)
-                        const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
-                        const writeStream = fs.createWriteStream(tempPath);
+		if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
+			const tempPath = path.join(__dirname, '..', '..', 'uploads', `${fileName}`)
+			const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
+			const writeStream = fs.createWriteStream(tempPath);
 
-                        const streamFinished = new Promise<void>((resolve, reject) => {
-                                writeStream.on('finish', () => resolve());
-                                writeStream.on('error', reject);
-                        });
+			const streamFinished = new Promise<void>((resolve, reject) => {
+				writeStream.on('finish', () => resolve());
+				writeStream.on('error', reject);
+			});
 
-                        for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
-                                const chunkPath = path.join(folderPath, `chunk_${i}`);
-                                const data = fs.readFileSync(chunkPath);
-                                writeStream.write(data);
-                        }
+			try {
+				for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
+					const chunkPath = path.join(folderPath, `chunk_${i}`);
+					const data = fs.readFileSync(chunkPath);
+					writeStream.write(data);
+				}
 
-                        writeStream.end();
+				writeStream.end();
+				await streamFinished;
+				fs.rmSync(folderPath, { recursive: true, force: true });
 
-                        await streamFinished;
-                        fs.rmSync(folderPath, { recursive: true, force: true });
-
-                        await prepVid(finalPath, batchName);
+				await prepVid(finalPath, normalizedBatchName);
+			} catch (err) {
+				console.error('Error reassembling video upload:', err);
+				res.status(500).json({ error: 'Failed to process upload.' });
+				return;
+			}
 
                         delete uploadsMap[fileId];
                         console.log(`Receive and prepped full file ${fileName} at ${new Date().toISOString()}`);
@@ -322,15 +345,25 @@ router.post(
 );
 
 router.post(
-        '/images',
+	'/images',
         upload.single('chunk'),
         async (req: Request, res: Response): Promise<void> => {
-                const { fileId, chunkIndex, totalChunks, fileName, fileSize, batchName } = req.body;
-                const chunkFile = req.file;
+		const { fileId, chunkIndex, totalChunks, fileName, batchName } = req.body;
+		const chunkFile = req.file;
+		const parsedChunkIndex = parsePositiveInt(chunkIndex);
+		const parsedTotalChunks = parsePositiveInt(totalChunks);
 
-                if (!fileId || !chunkIndex || !fileName || !chunkFile || batchName === '') {
-                        return res.status(400).send(`request body:${req.body}`) as unknown as void;
-                }
+		if (!isSafeToken(fileId) || !isSafeFileName(fileName) || !isSafePathSegment(batchName)) {
+			res.status(400).json({ error: 'Invalid upload request.' });
+			return;
+		}
+
+		if (!chunkFile || parsedChunkIndex === null || parsedTotalChunks === null) {
+			res.status(400).json({ error: 'Invalid upload request.' });
+			return;
+		}
+
+		const normalizedBatchName = batchName.trim();
 
                 const folderPath = path.join(__dirname, '..', '..', 'uploads', 'temp', fileId);
                 if (!fs.existsSync(folderPath)) {
@@ -339,39 +372,44 @@ router.post(
                 const chunkPath = path.join(folderPath, `chunk_${chunkIndex}`);
                 fs.renameSync(chunkFile.path, chunkPath);
 
-                if (!uploadsMap[fileId]) {
-                        uploadsMap[fileId] = {
-                                totalChunks: parseInt(totalChunks),
-                                receivedChunks: 0,
-                                fileName,
-                                folderPath,
-                                batchName
-                        }
-                }
+		if (!uploadsMap[fileId]) {
+			uploadsMap[fileId] = {
+				totalChunks: parsedTotalChunks,
+				receivedChunks: 0,
+				fileName,
+				folderPath,
+				batchName: normalizedBatchName
+			}
+		}
 
                 uploadsMap[fileId].receivedChunks++;
 
-                if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
-                        const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
-                        const writeStream = fs.createWriteStream(finalPath);
+		if (uploadsMap[fileId].receivedChunks === uploadsMap[fileId].totalChunks) {
+			const finalPath = path.join(__dirname, '..', '..', 'uploads', fileName);
+			const writeStream = fs.createWriteStream(finalPath);
 
-                        const streamFinished = new Promise<void>((resolve, reject) => {
-                                writeStream.on('finish', () => resolve());
-                                writeStream.on('error', reject);
-                        });
+			const streamFinished = new Promise<void>((resolve, reject) => {
+				writeStream.on('finish', () => resolve());
+				writeStream.on('error', reject);
+			});
 
-                        for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
-                                const chunkPath = path.join(folderPath, `chunk_${i}`);
-                                const data = fs.readFileSync(chunkPath);
-                                writeStream.write(data);
-                        }
+			try {
+				for (let i = 0; i < uploadsMap[fileId].totalChunks; i++) {
+					const chunkPath = path.join(folderPath, `chunk_${i}`);
+					const data = fs.readFileSync(chunkPath);
+					writeStream.write(data);
+				}
 
-                        writeStream.end();
+				writeStream.end();
+				await streamFinished;
+				fs.rmSync(folderPath, { recursive: true, force: true });
 
-                        await streamFinished;
-                        fs.rmSync(folderPath, { recursive: true, force: true });
-
-                        await prepImg(finalPath, batchName);
+				await prepImg(finalPath, normalizedBatchName);
+			} catch (err) {
+				console.error('Error reassembling image upload:', err);
+				res.status(500).json({ error: 'Failed to process upload.' });
+				return;
+			}
 
                         delete uploadsMap[fileId];
                         res.set('Connection', 'close');
@@ -382,7 +420,17 @@ router.post(
                                 message: `Chunk ${chunkIndex} received`,
                         });
                 }
-        }
+	}
 );
+
+async function safeUnlink(filePath: string): Promise<void> {
+	try {
+		await fs.promises.unlink(filePath);
+	} catch (err) {
+		if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+			console.error(`Failed to remove file ${filePath}:`, err);
+		}
+	}
+}
 
 export default router;

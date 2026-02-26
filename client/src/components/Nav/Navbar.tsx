@@ -3,22 +3,22 @@ import { NavLink } from "react-router-dom";
 import { FaAccessibleIcon } from "react-icons/fa";
 
 function Navbar() {
-        const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-                `rounded-full px-4 py-2 text-sm font-semibold transition ${
-                        isActive
-                                ? "bg-slate-900 text-white shadow-sm"
-                                : "text-slate-600 hover:bg-slate-900/5 hover:text-slate-900"
-                }`;
+	const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+		`px-3 py-2 text-sm font-medium transition ${
+			isActive
+				? "text-white border-b border-slate-100"
+				: "text-slate-400 hover:text-slate-100"
+		}`;
 
         return (
-                <nav className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/75 backdrop-blur">
-                        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-10">
-                                <NavLink to="/" className="flex items-center gap-3 text-slate-900">
-                                        <span className="grid h-10 w-10 place-items-center rounded-xl bg-teal-500/10 text-teal-700">
-                                                <FaAccessibleIcon className="text-lg" />
-                                        </span>
-                                        <span className="text-lg font-semibold tracking-tight">Studio Dashboard</span>
-                                </NavLink>
+		<nav className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950">
+			<div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-10">
+				<NavLink to="/" className="flex items-center gap-3 text-slate-100">
+					<span className="grid h-10 w-10 place-items-center border border-slate-800 text-slate-200">
+						<FaAccessibleIcon className="text-lg" />
+					</span>
+					<span className="text-base font-semibold tracking-tight">Studio Dashboard</span>
+				</NavLink>
                                 <div className="flex flex-1 items-center justify-center gap-2">
                                         <NavLink to="/upload" className={navLinkClass}>
                                                 Upload

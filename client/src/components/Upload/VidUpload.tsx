@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { DragEvent } from 'react';
+import { fetchWithAuth } from '../../utils/api';
 
 const CHUNK_SIZE = 1 * 1024 * 1024;
 const UPLOAD_VIDEOS_ENDPOINT = import.meta.env.VITE_UPLOAD_VIDEOS_ENDPOINT;
@@ -35,10 +36,10 @@ const Video: React.FC = () => {
                                         formData.append('fileName', file.name);
                                         formData.append('fileSize', String(file.size));
                                         formData.append('batchName', batchName);
-                                        await fetch(UPLOAD_VIDEOS_ENDPOINT, {
-                                                method: 'POST',
-                                                body: formData,
-                                        });
+					await fetchWithAuth(UPLOAD_VIDEOS_ENDPOINT, {
+						method: 'POST',
+						body: formData,
+					});
 
                                         setLogMessage(`Uploading and labeling ${file.name}... this may take some time`);
 
@@ -129,50 +130,50 @@ const Video: React.FC = () => {
                 });
         };
 
-        return (
-                <div
-                        className="mx-auto flex min-h-[70vh] w-full max-w-4xl flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white/80 p-8 text-center shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                >
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-700">Video Upload</p>
-                        <h2 className="display mt-3 text-3xl text-slate-900 sm:text-4xl">Drop mp4 folders to begin.</h2>
-                        <p className="mt-3 max-w-xl text-sm text-slate-600">
-                                Keep original folder structure and move videos into the labeling queue.
-                        </p>
+	return (
+		<div
+			className="mx-auto flex min-h-[70vh] w-full max-w-4xl flex-col items-center justify-center border border-slate-800 bg-slate-950 p-8 text-center"
+			onDrop={handleDrop}
+			onDragOver={handleDragOver}
+		>
+			<p className="text-xs font-medium text-slate-400">Video Upload</p>
+			<h2 className="mt-3 text-2xl font-semibold text-slate-100 sm:text-3xl">Drop mp4 folders to begin.</h2>
+			<p className="mt-3 max-w-xl text-sm text-slate-300">
+				Keep original folder structure and move videos into the labeling queue.
+			</p>
 
                         {/* Drag & Drop Zone */}
-                        <div
-                                className={`mt-6 w-full max-w-2xl rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-white ${
-                                        isLocked ? 'opacity-60' : ''
-                                }`}
-                                onDrop={handleDrop}
-                                onDragOver={handleDragOver}
-                        >
+			<div
+				className={`mt-6 w-full max-w-2xl border-2 border-dashed border-slate-700 bg-slate-900 px-6 py-10 text-sm font-medium text-slate-300 transition hover:border-slate-500 ${
+					isLocked ? 'opacity-60' : ''
+				}`}
+				onDrop={handleDrop}
+				onDragOver={handleDragOver}
+			>
                                 {isLocked ? 'Folder loaded and ready to upload.' : 'Drag and drop folders/files here'}
                         </div>
 
                         {!isUploading && isLocked && (
-                                <button
-                                        onClick={handleUpload}
-                                        className="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                                >
+				<button
+					onClick={handleUpload}
+					className="border border-slate-700 bg-slate-900 px-6 py-2.5 text-sm font-medium text-slate-100 transition hover:bg-slate-800"
+				>
                                         Start upload
                                 </button>
                         )}
-                        <p className="mt-6 text-sm font-semibold text-slate-600">
-                                {isLocked ? logMessage : 'Drag and drop your mp4 files to begin.'}
-                        </p>
-                        {isUploading && (
-                                <div className="mt-6 w-full rounded-full bg-slate-200 shadow-inner">
-                                        <div
-                                                className="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-300 ease-in-out"
-                                                style={{ width: `${uploadProgress}%` }}
-                                        />
-                                </div>
-                        )}
-                </div>
-        );
+			<p className="mt-6 text-sm font-medium text-slate-400">
+				{isLocked ? logMessage : 'Drag and drop your mp4 files to begin.'}
+			</p>
+			{isUploading && (
+				<div className="mt-6 w-full border border-slate-800 bg-slate-900">
+					<div
+						className="h-2 bg-slate-300 transition-all duration-300 ease-in-out"
+						style={{ width: `${uploadProgress}%` }}
+					/>
+				</div>
+			)}
+		</div>
+	);
 }
 
 export default Video;

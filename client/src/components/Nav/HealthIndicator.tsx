@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fetchWithAuth } from "../../utils/api";
 
 const HEALTH_ENDPOINT = import.meta.env.VITE_HEALTH_ENDPOINT;
 
@@ -10,7 +11,7 @@ function HealthIndicator() {
 
     const checkHealthy = async () => {
       try {
-        const res = await fetch(HEALTH_ENDPOINT);
+		const res = await fetchWithAuth(HEALTH_ENDPOINT);
         if (res.ok && isMounted) {
           setHealthy(true);
         } else if (isMounted) {
@@ -29,20 +30,20 @@ function HealthIndicator() {
     };
   }, []);
 
-  const color = healthy === null ? "#94a3b8" : healthy ? "#16a34a" : "#dc2626";
+	const color = healthy === null ? "#64748b" : healthy ? "#22c55e" : "#ef4444";
   const tooltip = healthy === null ? "Checking server..." : healthy ? "Server healthy" : "Server unreachable";
   const label = healthy === null ? "Checking" : healthy ? "Healthy" : "Offline";
 
-  return (
-    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600">
-      <span
-        title={tooltip}
-        className="inline-block h-2.5 w-2.5 rounded-full"
-        style={{
-          background: color,
-          boxShadow: "0 0 6px rgba(0,0,0,0.15)",
-        }}
-      />
+	return (
+		<div className="flex items-center gap-2 border border-slate-800 bg-slate-950 px-3 py-1 text-xs font-medium text-slate-300">
+			<span
+				title={tooltip}
+				className="inline-block h-2.5 w-2.5"
+				style={{
+					background: color,
+					boxShadow: "none",
+				}}
+			/>
       <span>{label}</span>
     </div>
   );
